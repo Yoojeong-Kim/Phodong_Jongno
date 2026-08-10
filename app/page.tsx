@@ -39,17 +39,12 @@ export default function Home() {
     <main>
       <header className="topbar"><img src="/phodong-logo.png" alt="포동" /><span className="event-badge">오늘만 열리는 이야기 놀이터!</span></header>
 
-      <section className="hero">
-        <div className="confetti" aria-hidden="true"><i>●</i><i>▲</i><i>★</i><i>◆</i><i>●</i></div>
-        <div className="hero-copy">
+      <section className="hero" style={{ gridTemplateColumns: "1fr", minHeight: 620 }}>
+        <div className="hero-copy" style={{ width: "min(1120px, 100%)", margin: "auto", textAlign: "center" }}>
           <p className="eyebrow">PHODONG TOGETHER DAY</p>
           <h1>찰칵! 우리 가족의 물건이<br /><em>세상에 하나뿐인 동화</em>가 돼요.</h1>
-          <p>각자 가져온 소중한 물건에는 서로 다른 가족과 문화의 이야기가 숨어 있어요. 사진을 찍고, 친구들에게 소개하고, 다 함께 재미있는 동화를 만들어봐요!</p>
+          <p style={{ marginLeft: "auto", marginRight: "auto" }}>각자 가져온 소중한 물건에는 서로 다른 가족과 문화의 이야기가 숨어 있어요. 사진을 찍고, 친구들에게 소개하고, 다 함께 재미있는 동화를 만들어봐요!</p>
           <a className="primary-link" href="#play">지금 같이 놀기 <span>→</span></a>
-        </div>
-        <div className="hero-art">
-          <div className="photo-frame"><img src="/phodong-hero.webp" alt="함께 그림책을 보는 아이와 가족" /><b>우리의 이야기가 시작돼요!</b></div>
-          <div className="speech one">내 물건은<br />무슨 이야기가 될까?</div><div className="speech two">다 같이<br />만들어보자! ✨</div>
         </div>
       </section>
 
