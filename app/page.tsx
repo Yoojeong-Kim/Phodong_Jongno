@@ -1,62 +1,97 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 
-const genres = ["전래동화", "판타지", "히어로", "마법", "일상", "자동차", "공주·왕자", "추리", "우주", "로봇", "동물", "공룡"];
-const objects = [
-  { emoji: "🛋️", name: "소파", role: "지혜로운 안내자" },
-  { emoji: "🧸", name: "곰인형", role: "용감한 친구" },
-  { emoji: "📚", name: "책", role: "비밀을 아는 마법사" },
-  { emoji: "🌵", name: "선인장", role: "숲의 수호자" },
-  { emoji: "🎈", name: "풍선", role: "하늘 탐험가" },
-];
-const stories: Record<string, string> = {
-  전래동화: "옛날 옛적, 마음씨 따뜻한 아이가 말을 할 줄 아는 {object}을 만났어요. {object}은 오래된 마을의 빛을 되찾으려면 작은 용기가 필요하다고 말했지요.",
-  판타지: "창문 너머 별빛이 반짝이던 밤, {object}이 조용히 눈을 떴어요. 아이와 {object}은 구름 문을 지나 잃어버린 달 조각을 찾으러 떠났답니다.",
-  히어로: "평화로운 오후, 동네의 모든 색이 갑자기 사라졌어요. 아이와 특별한 힘을 가진 {object}은 서로를 믿으며 색깔 도둑을 찾아 나섰어요.",
-  마법: "아이의 손끝이 {object}에 닿자 작은 별가루가 피어올랐어요. 오늘 안에 세 가지 친절을 찾으면 비밀의 마법 정원이 열린대요.",
-  일상: "비가 톡톡 내리는 아침, 아이는 {object}과 집 안 탐험을 시작했어요. 평범해 보이던 방마다 재미있는 발견과 새로운 질문이 숨어 있었답니다.",
-  자동차: "부릉부릉! {object}이 세상에서 가장 작은 자동차로 변했어요. 아이는 안전벨트를 매고 무지개 도로의 도움이 필요한 친구들을 만나러 출발했어요.",
-  "공주·왕자": "꽃잎 궁전의 축제를 앞둔 날, 아이와 {object}에게 중요한 초대장이 도착했어요. 가장 멋진 왕관은 보석이 아니라 다정한 마음으로 완성된대요.",
-  추리: "방 안에서 쿠키 향기만 남기고 보물 상자가 사라졌어요. 꼬마 탐정과 {object}은 작은 발자국과 반짝이는 실마리를 하나씩 살펴보기 시작했어요.",
-  우주: "별 지도에 없던 행성에서 구조 신호가 도착했어요. 아이와 우주 대원 {object}은 호기심 로켓을 타고 낯선 친구를 만나러 날아갔답니다.",
-  로봇: "어느 날 {object}에서 조그만 로봇의 목소리가 들렸어요. 아이는 감정을 배우고 싶은 로봇과 함께 웃음, 용기, 배려의 뜻을 찾아 나섰어요.",
-  동물: "숲속 친구들이 아끼던 노래를 잊어버렸어요. 아이와 {object}은 새와 토끼, 다람쥐의 소리를 모아 숲의 노래를 다시 만들기로 했어요.",
-  공룡: "책장 뒤 비밀문을 열자 아기 공룡이 기다리고 있었어요. 아이와 {object}은 길을 잃은 공룡을 가족에게 데려다주기 위해 거대한 발자국을 따라갔어요.",
+const greetings: Record<string, string> = {
+  "안녕하세요": "안녕하세요", "Hello": "Hello", "Xin chào": "Xin chào", "Salam": "Salam", "สวัสดี": "สวัสดี", "Привет": "Привет", "你好": "你好", "こんにちは": "こんにちは",
 };
 
 export default function Home() {
-  const [genre, setGenre] = useState("판타지");
-  const [objectName, setObjectName] = useState("곰인형");
-  const [generated, setGenerated] = useState(false);
+  const [photo, setPhoto] = useState("");
+  const [childName, setChildName] = useState("");
+  const [objectName, setObjectName] = useState("");
+  const [meaning, setMeaning] = useState("");
+  const [greeting, setGreeting] = useState("안녕하세요");
+  const [storyReady, setStoryReady] = useState(false);
   const storyRef = useRef<HTMLElement>(null);
-  const selectedObject = useMemo(() => objects.find((item) => item.name === objectName) ?? objects[1], [objectName]);
-  const story = stories[genre].replaceAll("{object}", selectedObject.name);
-  function makeStory() {
-    setGenerated(true);
-    window.setTimeout(() => storyRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+
+  useEffect(() => () => { if (photo) URL.revokeObjectURL(photo); }, [photo]);
+
+  function choosePhoto(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (photo) URL.revokeObjectURL(photo);
+    setPhoto(URL.createObjectURL(file));
+    setStoryReady(false);
   }
+
+  function makeStory() {
+    if (!photo || !childName.trim() || !objectName.trim() || !meaning.trim()) return;
+    setStoryReady(true);
+    window.setTimeout(() => storyRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+  }
+
+  const name = childName.trim() || "우리 친구";
+  const object = objectName.trim() || "소중한 물건";
+  const familyMeaning = meaning.trim() || "우리 가족의 따뜻한 마음";
+
   return (
     <main>
-      <header className="topbar"><img src="/phodong-logo.png" alt="포동" /><span>사진 속 발견이 이야기로 이어지는 순간</span></header>
+      <header className="topbar"><img src="/phodong-logo.png" alt="포동" /><span className="event-badge">오늘만 열리는 이야기 놀이터!</span></header>
+
       <section className="hero">
-        <div className="hero-copy"><p className="eyebrow">PHODONG STORY LAB</p><h1>우리 집 물건 하나로<br />오늘의 동화를 만나보세요.</h1><p>아이가 좋아하는 장르와 눈앞의 사물을 고르면, 포동이 상상력 가득한 이야기의 첫 장을 열어드려요.</p><a href="#experience" className="primary-link">바로 체험하기 <span>↓</span></a></div>
-        <div className="hero-image"><img src="/phodong-hero.webp" alt="아이와 부모가 포동 그림책을 함께 보는 모습" /></div>
-      </section>
-      <section className="experience" id="experience">
-        <div className="section-title"><span>3분 미리 체험</span><h2>어떤 이야기를 만들어볼까요?</h2><p>두 가지만 고르면 포동이 이야기의 시작을 들려줘요.</p></div>
-        <div className="steps">
-          <article className="choice-card"><div className="step-label"><b>1</b><span>좋아하는 이야기 장르</span></div><div className="genre-grid">{genres.map((item) => <button key={item} className={genre === item ? "selected" : ""} onClick={() => { setGenre(item); setGenerated(false); }}>{item}</button>)}</div></article>
-          <article className="choice-card"><div className="step-label"><b>2</b><span>오늘 이야기의 주인공</span></div><div className="object-grid">{objects.map((item) => <button key={item.name} className={objectName === item.name ? "selected" : ""} onClick={() => { setObjectName(item.name); setGenerated(false); }} aria-label={`${item.name}, ${item.role}`}><span>{item.emoji}</span><strong>{item.name}</strong><small>{item.role}</small></button>)}</div></article>
+        <div className="confetti" aria-hidden="true"><i>●</i><i>▲</i><i>★</i><i>◆</i><i>●</i></div>
+        <div className="hero-copy">
+          <p className="eyebrow">PHODONG TOGETHER DAY</p>
+          <h1>찰칵! 우리 가족의 물건이<br /><em>세상에 하나뿐인 동화</em>가 돼요.</h1>
+          <p>각자 가져온 소중한 물건에는 서로 다른 가족과 문화의 이야기가 숨어 있어요. 사진을 찍고, 친구들에게 소개하고, 다 함께 재미있는 동화를 만들어봐요!</p>
+          <a className="primary-link" href="#play">지금 같이 놀기 <span>→</span></a>
         </div>
-        <button className="generate" onClick={makeStory}>포동 이야기 만들기 <span>✦</span></button>
+        <div className="hero-art">
+          <div className="photo-frame"><img src="/phodong-hero.webp" alt="함께 그림책을 보는 아이와 가족" /><b>우리의 이야기가 시작돼요!</b></div>
+          <div className="speech one">내 물건은<br />무슨 이야기가 될까?</div><div className="speech two">다 같이<br />만들어보자! ✨</div>
+        </div>
       </section>
-      <section ref={storyRef} className={`story-result ${generated ? "show" : ""}`} aria-live="polite">
-        <div className="book-cover"><img src="/phodong-book.webp" alt="포동 맞춤 그림책" /></div>
-        <div className="story-copy"><p className="eyebrow">YOUR PHODONG STORY</p><span className="story-tag">{genre} · {selectedObject.role}</span><h2>{selectedObject.emoji} {selectedObject.name}과 별빛 모험</h2><p>{story}</p><div className="story-note">이 이야기는 체험용 미리보기예요. 실제 포동에서는 아이가 찍은 사진과 선택한 배움 주제로 더 풍성한 맞춤 동화가 만들어집니다.</div><button onClick={() => { setGenerated(false); document.getElementById("experience")?.scrollIntoView({ behavior: "smooth" }); }}>다시 만들어보기</button></div>
+
+      <section className="bring">
+        <div className="bring-title"><span>오늘의 준비물</span><h2>우리 가족을 떠올리게 하는 물건 하나</h2></div>
+        <div className="bring-list"><article><b>🧸</b><span>오래 함께한<br />장난감</span></article><article><b>🎁</b><span>가족에게 받은<br />선물</span></article><article><b>🪆</b><span>우리 문화가 담긴<br />소품</span></article><article><b>🥄</b><span>함께 쓰는<br />생활 물건</span></article><article><b>💛</b><span>나에게 특별한<br />어떤 것이든!</span></article></div>
       </section>
-      <section className="promise"><p>PHOTO · DISCOVER · LEARN · STORY</p><h2>아이의 하루는 이미<br />멋진 이야기로 가득해요.</h2><span>포동은 평범한 발견을 관찰과 배움, 오래 간직할 이야기로 이어줍니다.</span></section>
-      <footer><img src="/phodong-logo.png" alt="포동" /><p>아이의 발견이 배움이 되는 맞춤동화</p><small>© 2026 PHODONG</small></footer>
+
+      <section className="play" id="play">
+        <div className="section-heading"><p className="eyebrow">LET'S MAKE A STORY</p><h2>사진 한 장으로 동화 만들기</h2><p>친구와 함께 천천히 세 칸을 채워보세요.</p></div>
+        <div className="maker">
+          <div className={`upload-zone ${photo ? "has-photo" : ""}`}>
+            <input id="photo" type="file" accept="image/*" capture="environment" onChange={choosePhoto} />
+            <label htmlFor="photo">
+              {photo ? <img src={photo} alt="업로드한 가족 상징 물건" /> : <><b>📸</b><strong>물건 사진 찍기</strong><span>카메라로 찍거나 사진을 골라요</span></>}
+              {photo && <em>사진 다시 고르기</em>}
+            </label>
+          </div>
+          <div className="story-form">
+            <label><span><b>1</b> 내 이름</span><input value={childName} onChange={(e) => { setChildName(e.target.value); setStoryReady(false); }} placeholder="예: 지우" maxLength={20} /></label>
+            <label><span><b>2</b> 이 물건의 이름</span><input value={objectName} onChange={(e) => { setObjectName(e.target.value); setStoryReady(false); }} placeholder="예: 할머니가 주신 인형" maxLength={40} /></label>
+            <label><span><b>3</b> 우리 가족에게 왜 특별한가요?</span><textarea value={meaning} onChange={(e) => { setMeaning(e.target.value); setStoryReady(false); }} placeholder="예: 베트남에 계신 할머니가 보내주셨어요." maxLength={120} /></label>
+            <label><span><b>+</b> 이야기 속 첫인사</span><select value={greeting} onChange={(e) => { setGreeting(e.target.value); setStoryReady(false); }}>{Object.keys(greetings).map((item) => <option key={item}>{item}</option>)}</select></label>
+            <button className="make-button" disabled={!photo || !childName.trim() || !objectName.trim() || !meaning.trim()} onClick={makeStory}>나만의 동화 만들기 <span>✨</span></button>
+            <small>사진은 이 화면에서만 사용되며 서버에 저장되지 않아요.</small>
+          </div>
+        </div>
+      </section>
+
+      <section ref={storyRef} className={`story-result ${storyReady ? "show" : ""}`} aria-live="polite">
+        <div className="book-photo">{photo && <img src={photo} alt={`${object} 사진`} />}<span>MY FAMILY STORY</span></div>
+        <div className="story-copy">
+          <p className="eyebrow">세상에 하나뿐인 이야기</p><h2>{name}와 {object}의<br />무지개 여행</h2>
+          <p><strong>“{greetings[greeting]}!”</strong> 어느 즐거운 날, {name}가 {object}에게 인사를 건넸어요. 그러자 물건에서 알록달록한 빛이 피어나며 가족의 추억으로 가는 문이 열렸답니다.</p>
+          <p>{object}은 {familyMeaning}을 기억하고 있었어요. 둘은 그 소중한 마음을 친구들에게 나누기 위해 서로 다른 말과 노래, 맛있는 음식과 반짝이는 색깔이 가득한 마을로 모험을 떠났어요.</p>
+          <p>친구들은 생김새와 말이 달라도 서로의 이야기를 귀 기울여 들었어요. 그 순간 모두의 빛이 모여 커다란 무지개가 되었답니다. “우리 가족의 이야기는 모두 특별해!”</p>
+          <div className="story-actions"><button onClick={() => window.print()}>동화 간직하기</button><button onClick={() => { setStoryReady(false); document.getElementById("play")?.scrollIntoView({ behavior: "smooth" }); }}>다시 만들기</button></div>
+        </div>
+      </section>
+
+      <section className="together"><p>ONE PHOTO, MANY CULTURES, OUR STORY</p><h2>다른 모습, 다른 이야기,<br />그래서 더 신나는 우리!</h2><span>친구의 물건과 가족 이야기를 함께 듣고 서로의 특별함을 발견해요.</span></section>
+      <footer><img src="/phodong-logo.png" alt="포동" /><p>다 같이 만드는 오늘의 이야기 놀이터</p><small>© 2026 PHODONG</small></footer>
     </main>
   );
 }
