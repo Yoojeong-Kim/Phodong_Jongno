@@ -37,13 +37,37 @@ export default function Home() {
 
   return (
     <main>
+      <style>{`
+        body, button, input, textarea, select { font-family: "Jua", sans-serif !important; }
+        .event-badge, .hero-copy > p, .section-heading > p, .story-copy > p, .together > span { font-family: "Gaegu", cursive !important; font-weight: 700; }
+        .mascot-hero { grid-template-columns: minmax(360px, .92fr) minmax(480px, 1.08fr) !important; min-height: 680px !important; align-items: center; }
+        .hero-mascot { height: 100%; min-height: 680px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
+        .hero-mascot img { width: min(700px, 108%); height: 100%; min-height: 680px; object-fit: cover; object-position: center; }
+        .mascot-hero .hero-copy { width: auto !important; margin: 0 !important; text-align: left !important; padding-left: clamp(38px, 5vw, 84px); padding-right: clamp(30px, 7vw, 110px); }
+        .mascot-hero .hero-copy > p { margin-left: 0 !important; margin-right: 0 !important; font-size: 23px; line-height: 1.6; }
+        .mascot-hero h1 { font-family: "Jua", sans-serif; font-weight: 400; letter-spacing: -.035em; }
+        .section-heading h2, .bring-title h2, .story-copy h2, .together h2 { font-family: "Jua", sans-serif; font-weight: 400; }
+        .section-heading > p { font-size: 22px; }
+        @media (max-width: 900px) {
+          .mascot-hero { grid-template-columns: 1fr !important; }
+          .hero-mascot { min-height: 470px; height: 470px; }
+          .hero-mascot img { min-height: 470px; height: 470px; width: 100%; object-position: center 42%; }
+          .mascot-hero .hero-copy { padding: 58px 30px 82px !important; text-align: center !important; }
+          .mascot-hero .hero-copy > p { margin-left: auto !important; margin-right: auto !important; }
+        }
+        @media (max-width: 560px) {
+          .hero-mascot { min-height: 340px; height: 340px; }
+          .hero-mascot img { min-height: 340px; height: 340px; }
+          .mascot-hero .hero-copy { padding: 48px 22px 68px !important; }
+        }
+      `}</style>
       <header className="topbar"><img src="/phodong-logo.png" alt="포동" /><span className="event-badge">오늘만 열리는 이야기 놀이터!</span></header>
 
-      <section className="hero" style={{ gridTemplateColumns: "1fr", minHeight: 620 }}>
-        <div className="hero-copy" style={{ width: "min(1120px, 100%)", margin: "auto", textAlign: "center" }}>
-          <p className="eyebrow">PHODONG TOGETHER DAY</p>
+      <section className="hero mascot-hero">
+        <div className="hero-mascot"><img src="/phodong-mascot.png" alt="손을 흔드는 포동 곰돌이" /></div>
+        <div className="hero-copy">
           <h1>찰칵! 우리 가족의 물건이<br /><em>세상에 하나뿐인 동화</em>가 돼요.</h1>
-          <p style={{ marginLeft: "auto", marginRight: "auto" }}>각자 가져온 소중한 물건에는 서로 다른 가족과 문화의 이야기가 숨어 있어요. 사진을 찍고, 친구들에게 소개하고, 다 함께 재미있는 동화를 만들어봐요!</p>
+          <p>각자 가져온 소중한 물건에는 서로 다른 가족과 문화의 이야기가 숨어 있어요. 사진을 찍고, 친구들에게 소개하고, 다 함께 재미있는 동화를 만들어봐요!</p>
           <a className="primary-link" href="#play">지금 같이 놀기 <span>→</span></a>
         </div>
       </section>
@@ -54,7 +78,7 @@ export default function Home() {
       </section>
 
       <section className="play" id="play">
-        <div className="section-heading"><p className="eyebrow">LET'S MAKE A STORY</p><h2>사진 한 장으로 동화 만들기</h2><p>친구와 함께 천천히 세 칸을 채워보세요.</p></div>
+        <div className="section-heading"><h2>사진 한 장으로 동화 만들기</h2><p>친구와 함께 천천히 세 칸을 채워보세요.</p></div>
         <div className="maker">
           <div className={`upload-zone ${photo ? "has-photo" : ""}`}>
             <input id="photo" type="file" accept="image/*" capture="environment" onChange={choosePhoto} />
@@ -75,7 +99,7 @@ export default function Home() {
       </section>
 
       <section ref={storyRef} className={`story-result ${storyReady ? "show" : ""}`} aria-live="polite">
-        <div className="book-photo">{photo && <img src={photo} alt={`${object} 사진`} />}<span>MY FAMILY STORY</span></div>
+        <div className="book-photo">{photo && <img src={photo} alt={`${object} 사진`} />}<span>우리 가족 이야기</span></div>
         <div className="story-copy">
           <p className="eyebrow">세상에 하나뿐인 이야기</p><h2>{name}와 {object}의<br />무지개 여행</h2>
           <p><strong>“{greetings[greeting]}!”</strong> 어느 즐거운 날, {name}가 {object}에게 인사를 건넸어요. 그러자 물건에서 알록달록한 빛이 피어나며 가족의 추억으로 가는 문이 열렸답니다.</p>
@@ -85,7 +109,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="together"><p>ONE PHOTO, MANY CULTURES, OUR STORY</p><h2>다른 모습, 다른 이야기,<br />그래서 더 신나는 우리!</h2><span>친구의 물건과 가족 이야기를 함께 듣고 서로의 특별함을 발견해요.</span></section>
+      <section className="together"><h2>다른 모습, 다른 이야기,<br />그래서 더 신나는 우리!</h2><span>친구의 물건과 가족 이야기를 함께 듣고 서로의 특별함을 발견해요.</span></section>
       <footer><img src="/phodong-logo.png" alt="포동" /><p>다 같이 만드는 오늘의 이야기 놀이터</p><small>© 2026 PHODONG</small></footer>
     </main>
   );
