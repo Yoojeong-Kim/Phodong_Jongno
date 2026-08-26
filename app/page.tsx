@@ -1,116 +1,35 @@
 "use client";
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 
-import { ChangeEvent, useEffect, useRef, useState } from "react";
-
-const greetings: Record<string, string> = {
-  "안녕하세요": "안녕하세요", "Hello": "Hello", "Xin chào": "Xin chào", "Salam": "Salam", "สวัสดี": "สวัสดี", "Привет": "Привет", "你好": "你好", "こんにちは": "こんにちは",
-};
-
-export default function Home() {
-  const [photo, setPhoto] = useState("");
-  const [childName, setChildName] = useState("");
-  const [objectName, setObjectName] = useState("");
-  const [meaning, setMeaning] = useState("");
-  const [greeting, setGreeting] = useState("안녕하세요");
-  const [storyReady, setStoryReady] = useState(false);
-  const storyRef = useRef<HTMLElement>(null);
-
-  useEffect(() => () => { if (photo) URL.revokeObjectURL(photo); }, [photo]);
-
-  function choosePhoto(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (photo) URL.revokeObjectURL(photo);
-    setPhoto(URL.createObjectURL(file));
-    setStoryReady(false);
-  }
-
-  function makeStory() {
-    if (!photo || !childName.trim() || !objectName.trim() || !meaning.trim()) return;
-    setStoryReady(true);
-    window.setTimeout(() => storyRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
-  }
-
-  const name = childName.trim() || "우리 친구";
-  const object = objectName.trim() || "소중한 물건";
-  const familyMeaning = meaning.trim() || "우리 가족의 따뜻한 마음";
-
-  return (
-    <main>
-      <style>{`
-        body, button, input, textarea, select { font-family: "Jua", sans-serif !important; }
-        .event-badge, .hero-copy > p, .section-heading > p, .story-copy > p, .together > span { font-family: "Gaegu", cursive !important; font-weight: 700; }
-        .mascot-hero { grid-template-columns: minmax(360px, .92fr) minmax(480px, 1.08fr) !important; min-height: 680px !important; align-items: center; }
-        .hero-mascot { height: 100%; min-height: 680px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
-        .hero-mascot img { width: min(700px, 108%); height: 100%; min-height: 680px; object-fit: cover; object-position: center; }
-        .mascot-hero .hero-copy { width: auto !important; margin: 0 !important; text-align: left !important; padding-left: clamp(38px, 5vw, 84px); padding-right: clamp(30px, 7vw, 110px); }
-        .mascot-hero .hero-copy > p { margin-left: 0 !important; margin-right: 0 !important; font-size: 23px; line-height: 1.6; }
-        .mascot-hero h1 { font-family: "Jua", sans-serif; font-weight: 400; letter-spacing: -.035em; }
-        .section-heading h2, .bring-title h2, .story-copy h2, .together h2 { font-family: "Jua", sans-serif; font-weight: 400; }
-        .section-heading > p { font-size: 22px; }
-        @media (max-width: 900px) {
-          .mascot-hero { grid-template-columns: 1fr !important; }
-          .hero-mascot { min-height: 470px; height: 470px; }
-          .hero-mascot img { min-height: 470px; height: 470px; width: 100%; object-position: center 42%; }
-          .mascot-hero .hero-copy { padding: 58px 30px 82px !important; text-align: center !important; }
-          .mascot-hero .hero-copy > p { margin-left: auto !important; margin-right: auto !important; }
-        }
-        @media (max-width: 560px) {
-          .hero-mascot { min-height: 340px; height: 340px; }
-          .hero-mascot img { min-height: 340px; height: 340px; }
-          .mascot-hero .hero-copy { padding: 48px 22px 68px !important; }
-        }
-      `}</style>
-      <header className="topbar"><img src="/phodong-logo.png" alt="포동" /><span className="event-badge">오늘만 열리는 이야기 놀이터!</span></header>
-
-      <section className="hero mascot-hero">
-        <div className="hero-mascot"><img src="/phodong-mascot.png" alt="손을 흔드는 포동 곰돌이" /></div>
-        <div className="hero-copy">
-          <h1>찰칵! 우리 가족의 물건이<br /><em>세상에 하나뿐인 동화</em>가 돼요.</h1>
-          <p>각자 가져온 소중한 물건에는 서로 다른 가족과 문화의 이야기가 숨어 있어요. 사진을 찍고, 친구들에게 소개하고, 다 함께 재미있는 동화를 만들어봐요!</p>
-          <a className="primary-link" href="#play">지금 같이 놀기 <span>→</span></a>
-        </div>
-      </section>
-
-      <section className="bring">
-        <div className="bring-title"><span>오늘의 준비물</span><h2>우리 가족을 떠올리게 하는 물건 하나</h2></div>
-        <div className="bring-list"><article><b>🧸</b><span>오래 함께한<br />장난감</span></article><article><b>🎁</b><span>가족에게 받은<br />선물</span></article><article><b>🪆</b><span>우리 문화가 담긴<br />소품</span></article><article><b>🥄</b><span>함께 쓰는<br />생활 물건</span></article><article><b>💛</b><span>나에게 특별한<br />어떤 것이든!</span></article></div>
-      </section>
-
-      <section className="play" id="play">
-        <div className="section-heading"><h2>사진 한 장으로 동화 만들기</h2><p>친구와 함께 천천히 세 칸을 채워보세요.</p></div>
-        <div className="maker">
-          <div className={`upload-zone ${photo ? "has-photo" : ""}`}>
-            <input id="photo" type="file" accept="image/*" capture="environment" onChange={choosePhoto} />
-            <label htmlFor="photo">
-              {photo ? <img src={photo} alt="업로드한 가족 상징 물건" /> : <><b>📸</b><strong>물건 사진 찍기</strong><span>카메라로 찍거나 사진을 골라요</span></>}
-              {photo && <em>사진 다시 고르기</em>}
-            </label>
-          </div>
-          <div className="story-form">
-            <label><span><b>1</b> 내 이름</span><input value={childName} onChange={(e) => { setChildName(e.target.value); setStoryReady(false); }} placeholder="예: 지우" maxLength={20} /></label>
-            <label><span><b>2</b> 이 물건의 이름</span><input value={objectName} onChange={(e) => { setObjectName(e.target.value); setStoryReady(false); }} placeholder="예: 할머니가 주신 인형" maxLength={40} /></label>
-            <label><span><b>3</b> 우리 가족에게 왜 특별한가요?</span><textarea value={meaning} onChange={(e) => { setMeaning(e.target.value); setStoryReady(false); }} placeholder="예: 베트남에 계신 할머니가 보내주셨어요." maxLength={120} /></label>
-            <label><span><b>+</b> 이야기 속 첫인사</span><select value={greeting} onChange={(e) => { setGreeting(e.target.value); setStoryReady(false); }}>{Object.keys(greetings).map((item) => <option key={item}>{item}</option>)}</select></label>
-            <button className="make-button" disabled={!photo || !childName.trim() || !objectName.trim() || !meaning.trim()} onClick={makeStory}>나만의 동화 만들기 <span>✨</span></button>
-            <small>사진은 이 화면에서만 사용되며 서버에 저장되지 않아요.</small>
-          </div>
-        </div>
-      </section>
-
-      <section ref={storyRef} className={`story-result ${storyReady ? "show" : ""}`} aria-live="polite">
-        <div className="book-photo">{photo && <img src={photo} alt={`${object} 사진`} />}<span>우리 가족 이야기</span></div>
-        <div className="story-copy">
-          <p className="eyebrow">세상에 하나뿐인 이야기</p><h2>{name}와 {object}의<br />무지개 여행</h2>
-          <p><strong>“{greetings[greeting]}!”</strong> 어느 즐거운 날, {name}가 {object}에게 인사를 건넸어요. 그러자 물건에서 알록달록한 빛이 피어나며 가족의 추억으로 가는 문이 열렸답니다.</p>
-          <p>{object}은 {familyMeaning}을 기억하고 있었어요. 둘은 그 소중한 마음을 친구들에게 나누기 위해 서로 다른 말과 노래, 맛있는 음식과 반짝이는 색깔이 가득한 마을로 모험을 떠났어요.</p>
-          <p>친구들은 생김새와 말이 달라도 서로의 이야기를 귀 기울여 들었어요. 그 순간 모두의 빛이 모여 커다란 무지개가 되었답니다. “우리 가족의 이야기는 모두 특별해!”</p>
-          <div className="story-actions"><button onClick={() => window.print()}>동화 간직하기</button><button onClick={() => { setStoryReady(false); document.getElementById("play")?.scrollIntoView({ behavior: "smooth" }); }}>다시 만들기</button></div>
-        </div>
-      </section>
-
-      <section className="together"><h2>다른 모습, 다른 이야기,<br />그래서 더 신나는 우리!</h2><span>친구의 물건과 가족 이야기를 함께 듣고 서로의 특별함을 발견해요.</span></section>
-      <footer><img src="/phodong-logo.png" alt="포동" /><p>다 같이 만드는 오늘의 이야기 놀이터</p><small>© 2026 PHODONG</small></footer>
-    </main>
-  );
+const hellos=["안녕하세요","Hello","Xin chào","Salam","สวัสดี","Привет","你好","こんにちは"];
+export default function Home(){
+ const [entered,setEntered]=useState(false),[photo,setPhoto]=useState(""),[name,setName]=useState(""),[thing,setThing]=useState(""),[meaning,setMeaning]=useState(""),[hello,setHello]=useState(hellos[0]),[ready,setReady]=useState(false),[page,setPage]=useState(0);const storyRef=useRef<HTMLElement>(null);
+ useEffect(()=>()=>{if(photo)URL.revokeObjectURL(photo)},[photo]);
+ function choose(e:ChangeEvent<HTMLInputElement>){const f=e.target.files?.[0];if(!f)return;if(photo)URL.revokeObjectURL(photo);setPhoto(URL.createObjectURL(f));setReady(false)}
+ const n=name.trim()||"우리 친구",o=thing.trim()||"소중한 물건",m=meaning.trim()||"우리 가족의 따뜻한 마음";
+ const pages=useMemo(()=>[
+  [`${n}와 ${o}`,`햇살이 포근한 어느 날, ${n}는 ${o}을 조심스레 꺼냈어요. 보기에는 평범했지만, ${n}에게는 세상 무엇과도 바꿀 수 없는 보물이었지요.`],
+  ["추억의 문이 열리다",`“${hello}!” ${n}가 인사를 건네자 ${o}에서 복숭아빛 빛이 반짝였어요. 그 빛 속에는 ${m}이라는 소중한 기억이 담겨 있었답니다.`],
+  ["서로 다른 인사",`${n}와 ${o}은 추억의 문을 지나 여러 친구를 만났어요. 친구들은 서로 다른 말로 인사했지만, 환하게 웃는 얼굴만으로도 마음을 금세 알아볼 수 있었어요.`],
+  ["우리 집의 특별한 색",`친구들은 각자 가족을 떠올리게 하는 물건을 보여주었어요. 모양도 색도 모두 달랐지만, 물건마다 사랑과 기다림, 함께한 시간이 반짝이고 있었지요.`],
+  ["이야기가 모이면",`${n}는 ${o}에 담긴 이야기를 들려주었어요. 친구들의 이야기도 하나둘 이어지자 작은 빛들이 모여 커다란 분홍빛 별이 되었답니다.`],
+  ["세상에 하나뿐인 동화",`별빛은 한 권의 동화책으로 변했어요. 첫 장에는 “모든 가족의 이야기는 다르고, 그래서 모두 특별해.”라고 적혀 있었지요. ${n}는 ${o}을 꼭 안고 활짝 웃었답니다.`]
+ ],[n,o,m,hello]);
+ function make(){if(!photo||!name.trim()||!thing.trim()||!meaning.trim())return;setPage(0);setReady(true);setTimeout(()=>storyRef.current?.scrollIntoView({behavior:"smooth"}),80)}
+ if(!entered)return <main className="entrance"><button className="entrance-bear" onClick={()=>setEntered(true)} aria-label="포동 이야기 놀이터 시작하기"><i/><img src="/phodong-mascot.png" alt=""/><b className="sp a">✦</b><b className="sp b">✦</b><b className="sp c">●</b></button><style>{css}</style></main>;
+ return <main className="inside">
+  <header className="mini"><img src="/phodong-logo.png" alt="포동"/><button onClick={()=>setEntered(false)}>포동이 만나기</button></header>
+  <section className="welcome"><span/><span/><h1>찰칵! 우리 가족의 물건이<br/><em>세상에 하나뿐인 동화</em>가 돼요.</h1><a href="#prepare">↓</a></section>
+  <section className="prepare" id="prepare"><p>오늘의 준비물</p><h2>우리 가족을 떠올리게 하는<br/>물건 하나</h2><div className="cloud"><span>🧸<small>장난감</small></span><span>🎁<small>선물</small></span><span>🪆<small>문화 소품</small></span><span>🥄<small>생활 물건</small></span><span>💗<small>나만의 보물</small></span></div></section>
+  <section className="create" id="create"><div className="title"><h2>사진 한 장이면 충분해요</h2><p>포동이와 함께 이야기를 시작해볼까요?</p></div><div className="maker">
+   <div className={`drop ${photo?"filled":""}`}><input id="photo" type="file" accept="image/*" capture="environment" onChange={choose}/><label htmlFor="photo">{photo?<><img src={photo} alt="선택한 가족 물건"/><b>다시 찍기</b></>:<><span>📷</span><strong>물건 사진 찍기</strong><small>사진을 고를 수도 있어요</small></>}</label></div>
+   <div className="form"><label>내 이름<input value={name} onChange={e=>{setName(e.target.value);setReady(false)}} placeholder="예: 지우"/></label><label>물건 이름<input value={thing} onChange={e=>{setThing(e.target.value);setReady(false)}} placeholder="예: 할머니가 주신 인형"/></label><label>왜 특별한가요?<textarea value={meaning} onChange={e=>{setMeaning(e.target.value);setReady(false)}} placeholder="예: 멀리 계신 할머니가 보내주셨어요."/></label><label>첫인사<select value={hello} onChange={e=>setHello(e.target.value)}>{hellos.map(x=><option key={x}>{x}</option>)}</select></label><button disabled={!photo||!name.trim()||!thing.trim()||!meaning.trim()} onClick={make}>동화 만들기</button><small>사진은 이 기기에서만 사용돼요.</small></div>
+  </div></section>
+  <section ref={storyRef} className={`storybook ${ready?"show":""}`}><div className="book"><div className="visual"><img src={photo} alt={`${o} 사진`}/><span>{page+1} / {pages.length}</span></div><article key={page}><small>페이지 {page+1}</small><h2>{pages[page][0]}</h2><p>{pages[page][1]}</p><nav><button disabled={page===0} onClick={()=>setPage(p=>p-1)}>이전</button><div>{pages.map((_,i)=><button key={i} className={page===i?"on":""} onClick={()=>setPage(i)} aria-label={`${i+1}페이지`}/>)}</div>{page<pages.length-1?<button onClick={()=>setPage(p=>p+1)}>다음</button>:<button onClick={()=>window.print()}>간직하기</button>}</nav></article></div><button className="restart" onClick={()=>{setReady(false);document.getElementById("create")?.scrollIntoView({behavior:"smooth"})}}>새 이야기 만들기</button></section>
+  <footer><img src="/phodong-logo.png" alt="포동"/><span>© 2026 PHODONG</span></footer><style>{css}</style>
+ </main>
 }
+
+const css=`
+:root{--rose:#f55f91;--deep:#3d2940;--paper:#fffaf8}body,button,input,textarea,select{font-family:"Jua",sans-serif!important}.entrance{height:100svh;min-height:580px;overflow:hidden;background:radial-gradient(circle at 50% 42%,#fff 0 15%,#ffe9f0 45%,#ffcddd 100%);display:grid;place-items:center}.entrance-bear{width:min(760px,92vw);height:min(760px,92vw);max-height:92svh;border:0;background:none;position:relative;cursor:pointer;padding:0;animation:float 3.2s ease-in-out infinite}.entrance-bear img{position:relative;z-index:2;width:100%;height:100%;object-fit:contain;border-radius:50%;filter:drop-shadow(0 26px 38px rgba(171,69,105,.18));transition:.35s}.entrance-bear:hover img{transform:scale(1.025) rotate(-1deg)}.entrance-bear i{position:absolute;inset:9%;border:2px solid #ffffffd9;border-radius:50%;animation:pulse 2.4s ease-out infinite}.sp{position:absolute;z-index:3;color:#fff;font-size:32px;animation:twinkle 1.8s infinite}.sp.a{top:18%;left:5%}.sp.b{right:7%;top:28%;animation-delay:.5s}.sp.c{right:13%;bottom:18%;font-size:15px}@keyframes float{50%{transform:translateY(-13px)}}@keyframes pulse{70%{transform:scale(1.08);opacity:0}100%{opacity:0}}@keyframes twinkle{50%{transform:scale(.55) rotate(35deg);opacity:.35}}.inside{background:var(--paper);color:var(--deep)}.mini{height:76px;padding:0 clamp(22px,5vw,72px);display:flex;align-items:center;justify-content:space-between;background:#fffaf8e8;backdrop-filter:blur(14px);position:sticky;top:0;z-index:20;border-bottom:1px solid #f5e6e9}.mini img,footer img{width:102px;height:54px;object-fit:contain}.mini button{border:0;background:none;color:#9a7580}.welcome{min-height:calc(100svh - 76px);display:grid;place-items:center;text-align:center;padding:60px 24px;position:relative;overflow:hidden;background:linear-gradient(150deg,#fffaf8,#fff0f5)}.welcome h1{z-index:2;font-size:clamp(48px,7vw,94px);line-height:1.15;letter-spacing:-.045em;font-weight:400}.welcome h1 em{font-style:normal;color:var(--rose)}.welcome>a{position:absolute;bottom:32px;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:#fff;color:var(--rose);text-decoration:none;box-shadow:0 10px 30px #c9597e29;animation:bounce 2s infinite}.welcome>span{position:absolute;border-radius:50%;width:270px;height:270px;background:#ffdbe6;left:-90px;top:12%}.welcome>span+span{width:220px;height:220px;background:#ffe6dc;left:auto;right:-50px;top:auto;bottom:8%}@keyframes bounce{50%{transform:translateY(8px)}}.prepare{padding:130px 24px;text-align:center;background:#fff}.prepare>p{font-family:"Gaegu",cursive;font-size:24px;color:var(--rose);margin:0}.prepare h2,.title h2{font-size:clamp(42px,5vw,68px);font-weight:400;line-height:1.2;margin:12px 0 58px}.cloud{max-width:980px;margin:auto;display:grid;grid-template-columns:repeat(5,1fr);gap:18px}.cloud>span{aspect-ratio:1;border-radius:44% 56% 50%;background:#fff0f4;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:48px}.cloud>span:nth-child(even){background:#fff3df;transform:translateY(18px)}.cloud small{font-size:15px;margin-top:8px}.create{padding:130px clamp(18px,6vw,90px);background:linear-gradient(#fff6f8,#ffeef3)}.title{text-align:center;margin-bottom:55px}.title h2{margin-bottom:0}.title p{font-family:"Gaegu",cursive;font-size:24px;color:#8d6874}.maker{max-width:1120px;margin:auto;display:grid;grid-template-columns:.92fr 1.08fr;gap:30px}.drop{min-height:590px;border:2px dashed #e5aabe;border-radius:28px;background:#ffffffa6;overflow:hidden;position:relative}.drop input{position:absolute;opacity:0}.drop label{height:100%;min-height:590px;display:flex;flex-direction:column;justify-content:center;align-items:center;cursor:pointer}.drop label>span{font-size:62px}.drop label>strong{font-size:27px;margin-top:13px}.drop img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.drop b{position:absolute;bottom:20px;background:#3d2940db;color:#fff;padding:11px 18px;border-radius:99px}.form{background:#fff;padding:36px;border-radius:28px;box-shadow:0 24px 65px #8f49601a;display:flex;flex-direction:column;gap:17px}.form input,.form textarea,.form select{display:block;width:100%;margin-top:7px;border:0;border-bottom:2px solid #f1dce3;background:#fffafb;padding:13px 11px;outline:none}.form textarea{min-height:90px}.form>button{border:0;background:var(--rose);color:#fff;padding:17px;border-radius:15px;font-size:19px}.form>button:disabled{background:#d8c7cc}.form>small{text-align:center;color:#a38891}.storybook{display:none;padding:120px 24px;background:#f8dbe4}.storybook.show{display:block}.book{max-width:1180px;margin:auto;display:grid;grid-template-columns:.9fr 1.1fr;min-height:650px;background:#fff;box-shadow:0 30px 90px #6834462e;border-radius:28px;overflow:hidden}.visual{position:relative;background:#f1c9d6}.visual img{width:100%;height:100%;object-fit:cover}.visual span{position:absolute;left:20px;top:20px;background:#fff;padding:8px 12px;border-radius:99px;color:var(--rose)}.book article{padding:clamp(40px,6vw,78px);display:flex;flex-direction:column;justify-content:center;animation:pageIn .35s ease}.book article>small{color:var(--rose)}.book article h2{font-size:clamp(38px,4vw,58px);font-weight:400;margin:14px 0 25px}.book article p{font-family:"Gaegu",cursive;font-weight:700;font-size:24px;line-height:1.75;color:#5f495f}.book nav{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;margin-top:34px}.book nav>button{border:0;background:#f9e7ed;padding:10px 15px;border-radius:99px}.book nav>button:disabled{opacity:.3}.book nav div{display:flex;justify-content:center;gap:7px}.book nav div button{width:9px;height:9px;border:0;border-radius:50%;background:#e8c7d1;padding:0}.book nav div button.on{background:var(--rose);transform:scale(1.3)}.restart{display:block;margin:30px auto 0;border:0;background:none;border-bottom:1px solid #6e4f59;padding:8px}footer{height:140px;padding:30px clamp(22px,6vw,90px);display:flex;align-items:center;justify-content:space-between;background:#fff}footer span{font-size:12px;color:#a88d95}@keyframes pageIn{from{opacity:0;transform:translateX(14px)}}@media(max-width:850px){.cloud{grid-template-columns:repeat(3,1fr)}.maker,.book{grid-template-columns:1fr}.drop,.drop label{min-height:480px}.visual{min-height:460px}.book article{min-height:520px}}@media(max-width:560px){.mini{height:66px}.welcome{min-height:calc(100svh - 66px)}.welcome h1{font-size:42px}.prepare,.create{padding-top:90px;padding-bottom:90px}.cloud{grid-template-columns:repeat(2,1fr)}.drop,.drop label{min-height:380px}.form{padding:25px 18px}.storybook{padding:70px 12px}.book{border-radius:18px}.visual{min-height:340px}.book article{padding:34px 22px}.book article p{font-size:21px}}@media print{.mini,.welcome,.prepare,.create,footer,.restart{display:none!important}.storybook,.storybook.show{display:block!important;padding:0}.book{box-shadow:none}}
+`;
