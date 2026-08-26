@@ -1,31 +1,31 @@
 "use client";
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 
-const hellos=["안녕하세요","Hello","Xin chào","Salam","สวัสดี","Привет","你好","こんにちは"];
+const hellos=["안녕!","Hello!","Xin chào!","Salam!","สวัสดี!","Привет!","你好!","こんにちは!"];
 export default function Home(){
  const [entered,setEntered]=useState(false),[photo,setPhoto]=useState(""),[name,setName]=useState(""),[thing,setThing]=useState(""),[meaning,setMeaning]=useState(""),[hello,setHello]=useState(hellos[0]),[ready,setReady]=useState(false),[page,setPage]=useState(0);const storyRef=useRef<HTMLElement>(null);
  useEffect(()=>()=>{if(photo)URL.revokeObjectURL(photo)},[photo]);
  function choose(e:ChangeEvent<HTMLInputElement>){const f=e.target.files?.[0];if(!f)return;if(photo)URL.revokeObjectURL(photo);setPhoto(URL.createObjectURL(f));setReady(false)}
- const n=name.trim()||"우리 친구",o=thing.trim()||"소중한 물건",m=meaning.trim()||"우리 가족의 따뜻한 마음";
+ const n=name.trim()||"친구",o=thing.trim()||"소중한 물건",m=meaning.trim()||"우리 가족의 따뜻한 마음";
  const pages=useMemo(()=>[
-  [`${n}와 ${o}`,`햇살이 포근한 어느 날, ${n}는 ${o}을 조심스레 꺼냈어요. 보기에는 평범했지만, ${n}에게는 세상 무엇과도 바꿀 수 없는 보물이었지요.`],
-  ["추억의 문이 열리다",`“${hello}!” ${n}가 인사를 건네자 ${o}에서 복숭아빛 빛이 반짝였어요. 그 빛 속에는 ${m}이라는 소중한 기억이 담겨 있었답니다.`],
-  ["서로 다른 인사",`${n}와 ${o}은 추억의 문을 지나 여러 친구를 만났어요. 친구들은 서로 다른 말로 인사했지만, 환하게 웃는 얼굴만으로도 마음을 금세 알아볼 수 있었어요.`],
-  ["우리 집의 특별한 색",`친구들은 각자 가족을 떠올리게 하는 물건을 보여주었어요. 모양도 색도 모두 달랐지만, 물건마다 사랑과 기다림, 함께한 시간이 반짝이고 있었지요.`],
-  ["이야기가 모이면",`${n}는 ${o}에 담긴 이야기를 들려주었어요. 친구들의 이야기도 하나둘 이어지자 작은 빛들이 모여 커다란 분홍빛 별이 되었답니다.`],
-  ["세상에 하나뿐인 동화",`별빛은 한 권의 동화책으로 변했어요. 첫 장에는 “모든 가족의 이야기는 다르고, 그래서 모두 특별해.”라고 적혀 있었지요. ${n}는 ${o}을 꼭 안고 활짝 웃었답니다.`]
+  [`${n}와 ${o}`,`햇살이 포근한 어느 날, ${n}는 ${o}을 조심스레 꺼냈어. 보기에는 평범해 보여도 ${n}에게는 세상 무엇과도 바꿀 수 없는 보물이었지.`],
+  ["추억의 문이 열렸어",`“${hello}” ${n}가 인사를 건네자 ${o}에서 복숭아빛이 반짝였어. 그 빛 속에는 ${m}이라는 소중한 기억이 담겨 있었단다.`],
+  ["새로운 친구들을 만났어",`${n}와 ${o}은 추억의 문을 지나 여러 친구를 만났어. 친구들은 서로 다른 말로 인사했지만, 환하게 웃는 얼굴만으로도 마음을 금세 알아볼 수 있었지.`],
+  ["우리 집만의 특별한 색",`친구들도 가족을 떠올리게 하는 물건을 하나씩 보여줬어. 모양도 색도 모두 달랐지만, 물건마다 사랑과 기다림, 함께한 시간이 반짝이고 있었어.`],
+  ["이야기가 하나로 모였어",`${n}도 ${o}에 담긴 이야기를 들려줬어. 친구들의 이야기가 하나둘 이어지자 작은 빛들이 모여 커다란 분홍빛 별이 되었지.`],
+  ["세상에 하나뿐인 우리 동화",`별빛은 한 권의 동화책으로 변했어. 첫 장에는 “모든 가족의 이야기는 다르고, 그래서 모두 특별해!”라고 적혀 있었지. ${n}는 ${o}을 꼭 안고 활짝 웃었어.`]
  ],[n,o,m,hello]);
  function make(){if(!photo||!name.trim()||!thing.trim()||!meaning.trim())return;setPage(0);setReady(true);setTimeout(()=>storyRef.current?.scrollIntoView({behavior:"smooth"}),80)}
  if(!entered)return <main className="entrance"><button className="entrance-bear" onClick={()=>setEntered(true)} aria-label="포동 이야기 놀이터 시작하기"><i/><img src="/phodong-mascot.png" alt=""/><b className="sp a">✦</b><b className="sp b">✦</b><b className="sp c">●</b></button><style>{css}</style></main>;
  return <main className="inside">
-  <header className="mini"><img src="/phodong-logo.png" alt="포동"/><button onClick={()=>setEntered(false)}>포동이 만나기</button></header>
-  <section className="welcome"><span/><span/><h1>찰칵! 우리 가족의 물건이<br/><em>세상에 하나뿐인 동화</em>가 돼요.</h1><a href="#prepare">↓</a></section>
-  <section className="prepare" id="prepare"><p>오늘의 준비물</p><h2>우리 가족을 떠올리게 하는<br/>물건 하나</h2><div className="cloud"><span>🧸<small>장난감</small></span><span>🎁<small>선물</small></span><span>🪆<small>문화 소품</small></span><span>🥄<small>생활 물건</small></span><span>💗<small>나만의 보물</small></span></div></section>
-  <section className="create" id="create"><div className="title"><h2>사진 한 장이면 충분해요</h2><p>포동이와 함께 이야기를 시작해볼까요?</p></div><div className="maker">
-   <div className={`drop ${photo?"filled":""}`}><input id="photo" type="file" accept="image/*" capture="environment" onChange={choose}/><label htmlFor="photo">{photo?<><img src={photo} alt="선택한 가족 물건"/><b>다시 찍기</b></>:<><span>📷</span><strong>물건 사진 찍기</strong><small>사진을 고를 수도 있어요</small></>}</label></div>
-   <div className="form"><label>내 이름<input value={name} onChange={e=>{setName(e.target.value);setReady(false)}} placeholder="예: 지우"/></label><label>물건 이름<input value={thing} onChange={e=>{setThing(e.target.value);setReady(false)}} placeholder="예: 할머니가 주신 인형"/></label><label>왜 특별한가요?<textarea value={meaning} onChange={e=>{setMeaning(e.target.value);setReady(false)}} placeholder="예: 멀리 계신 할머니가 보내주셨어요."/></label><label>첫인사<select value={hello} onChange={e=>setHello(e.target.value)}>{hellos.map(x=><option key={x}>{x}</option>)}</select></label><button disabled={!photo||!name.trim()||!thing.trim()||!meaning.trim()} onClick={make}>동화 만들기</button><small>사진은 이 기기에서만 사용돼요.</small></div>
+  <header className="mini"><img src="/phodong-logo.png" alt="포동"/><button onClick={()=>setEntered(false)}>나 다시 만나기</button></header>
+  <section className="welcome"><span/><span/><h1>찰칵! 우리 가족의 물건이<br/><em>세상에 하나뿐인 동화</em>가 돼!</h1><a href="#prepare" aria-label="준비물 보러 가기">↓</a></section>
+  <section className="prepare" id="prepare"><p>이것만 준비해 줘!</p><h2>우리 가족이 떠오르는<br/>물건 하나를 가져와</h2><div className="cloud"><span>🧸<small>좋아하는 장난감</small></span><span>🎁<small>가족에게 받은 선물</small></span><span>🪆<small>우리 문화 소품</small></span><span>🥄<small>함께 쓰는 물건</small></span><span>💗<small>나만의 보물</small></span></div></section>
+  <section className="create" id="create"><div className="title"><h2>사진 한 장이면 충분해!</h2><p>나랑 같이 이야기를 시작해 볼까?</p></div><div className="maker">
+   <div className={`drop ${photo?"filled":""}`}><input id="photo" type="file" accept="image/*" capture="environment" onChange={choose}/><label htmlFor="photo">{photo?<><img src={photo} alt="선택한 가족 물건"/><b>다시 찍어 볼래?</b></>:<><span>📷</span><strong>물건을 찍어 줘</strong><small>앨범에서 골라도 좋아!</small></>}</label></div>
+   <div className="form"><label>네 이름을 알려 줘<input value={name} onChange={e=>{setName(e.target.value);setReady(false)}} placeholder="예: 지우"/></label><label>이 물건은 뭐라고 불러?<input value={thing} onChange={e=>{setThing(e.target.value);setReady(false)}} placeholder="예: 할머니가 주신 인형"/></label><label>왜 특별한지 들려줘<textarea value={meaning} onChange={e=>{setMeaning(e.target.value);setReady(false)}} placeholder="예: 멀리 계신 할머니가 보내 주셨어."/></label><label>어떤 말로 인사할까?<select value={hello} onChange={e=>setHello(e.target.value)}>{hellos.map(x=><option key={x}>{x}</option>)}</select></label><button disabled={!photo||!name.trim()||!thing.trim()||!meaning.trim()} onClick={make}>우리 동화 만들자!</button><small>사진은 이 기기에서만 사용할게.</small></div>
   </div></section>
-  <section ref={storyRef} className={`storybook ${ready?"show":""}`}><div className="book"><div className="visual"><img src={photo} alt={`${o} 사진`}/><span>{page+1} / {pages.length}</span></div><article key={page}><small>페이지 {page+1}</small><h2>{pages[page][0]}</h2><p>{pages[page][1]}</p><nav><button disabled={page===0} onClick={()=>setPage(p=>p-1)}>이전</button><div>{pages.map((_,i)=><button key={i} className={page===i?"on":""} onClick={()=>setPage(i)} aria-label={`${i+1}페이지`}/>)}</div>{page<pages.length-1?<button onClick={()=>setPage(p=>p+1)}>다음</button>:<button onClick={()=>window.print()}>간직하기</button>}</nav></article></div><button className="restart" onClick={()=>{setReady(false);document.getElementById("create")?.scrollIntoView({behavior:"smooth"})}}>새 이야기 만들기</button></section>
+  <section ref={storyRef} className={`storybook ${ready?"show":""}`}><div className="book"><div className="visual"><img src={photo} alt={`${o} 사진`}/><span>{page+1} / {pages.length}</span></div><article key={page}><small>{page+1}번째 이야기</small><h2>{pages[page][0]}</h2><p>{pages[page][1]}</p><nav><button disabled={page===0} onClick={()=>setPage(p=>p-1)}>앞 이야기</button><div>{pages.map((_,i)=><button key={i} className={page===i?"on":""} onClick={()=>setPage(i)} aria-label={`${i+1}번째 이야기`}/>)}</div>{page<pages.length-1?<button onClick={()=>setPage(p=>p+1)}>다음 이야기</button>:<button onClick={()=>window.print()}>간직할래!</button>}</nav></article></div><button className="restart" onClick={()=>{setReady(false);document.getElementById("create")?.scrollIntoView({behavior:"smooth"})}}>다른 이야기도 만들자!</button></section>
   <footer><img src="/phodong-logo.png" alt="포동"/><span>© 2026 PHODONG</span></footer><style>{css}</style>
  </main>
 }
