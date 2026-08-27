@@ -17,6 +17,20 @@ export async function GET(req:Request){
  return Response.json({stories:(result.results||[]).map(rowToStory)});
 }
 
+export async function DELETE(req:Request){
+ try{
+  await ensureStoryTables();
+  const id=new URL(req.url).searchParams.get("id")||"";
+  if(!/^[0-9a-f-]{36}$/.test(id))return Response.json({error:"잘못된 동화야."},{status:400});
+  const found=await env.DB.prepare("SELECT id FROM stories WHERE id=?").bind(id).first();
+  if(!found)return Response.json({error:"이미 지워진 동화야."},{status:404});
+  const keys=[];for(let page=1;page<=7;page++){keys.push(`stories/${id}/page-${page}.png`,`stories/${id}/page-${page}-style-v2.png`)}
+  await env.STORY_IMAGES.delete(keys);
+  await env.DB.prepare("DELETE FROM stories WHERE id=?").bind(id).run();
+  return Response.json({deleted:true});
+ }catch(e){console.error("story_delete_failed",e);return Response.json({error:"동화를 지우지 못했어."},{status:500})}
+}
+
 export async function POST(req:Request){
  let stage="start";
  try{
