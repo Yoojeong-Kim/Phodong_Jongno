@@ -25,10 +25,10 @@ export async function POST(req:Request){
   const count=await env.DB.prepare("SELECT COUNT(*) AS count FROM stories").first<{count:number}>();
   if((count?.count||0)>=30)return Response.json({error:"오늘 준비한 동화를 모두 만들었어. 관리자에게 알려 줘!"},{status:429});
   const body=await req.json() as any;
-  const childName=String(body.childName||"").trim().slice(0,20),objectName=String(body.objectName||"").trim().slice(0,40),meaning=String(body.meaning||"").trim().slice(0,300),genre=String(body.genre||""),photo=String(body.photo||"");
-  if(!childName||!objectName||!meaning||!genres.has(genre)||!photo.startsWith("data:image/"))return Response.json({error:"입력한 내용을 다시 확인해 줘."},{status:400});
+  const childName=String(body.childName||"").trim().slice(0,20),objectName=String(body.objectName||"").trim().slice(0,40),meaning=String(body.meaning||"").trim().slice(0,300),genre=String(body.genre||""),appearance=String(body.appearance||"").trim().slice(0,100),photo=String(body.photo||"");
+  if(!childName||!objectName||!meaning||!appearance||!genres.has(genre)||!photo.startsWith("data:image/"))return Response.json({error:"입력한 내용을 다시 확인해 줘."},{status:400});
   if(!/^data:image\/(jpeg|png|webp|gif);base64,/i.test(photo))return Response.json({error:"사진을 읽기 어려워. 다시 찍거나 다른 사진을 골라 줘."},{status:400});
-  const key=openAIKey(),userText=storyInput({childName,objectName,meaning,genre});
+  const key=openAIKey(),userText=storyInput({childName,objectName,meaning,genre,appearance});
   stage="moderation";
   try{const moderation=await openAIFetch("https://api.openai.com/v1/moderations",{method:"POST",headers:{Authorization:`Bearer ${key}`,"Content-Type":"application/json"},body:JSON.stringify({model:"omni-moderation-latest",input:[{type:"text",text:userText},{type:"image_url",image_url:{url:photo}}]})},1);if(moderation.ok){const mod=await moderation.json() as any;if(mod.results?.[0]?.flagged)return Response.json({error:"다른 사진이나 이야기로 다시 시도해 줘."},{status:400})}}catch(e){console.warn("moderation_skipped",e instanceof Error?e.message:String(e))}
   stage="story_api";
