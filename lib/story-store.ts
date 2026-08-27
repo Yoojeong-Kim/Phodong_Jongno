@@ -7,7 +7,9 @@ export async function ensureStoryTables(){
  const db=env.DB;
  await db.batch([
   db.prepare(`CREATE TABLE IF NOT EXISTS stories (id TEXT PRIMARY KEY, child_name TEXT NOT NULL, genre TEXT NOT NULL, object_name TEXT NOT NULL, title TEXT NOT NULL, summary TEXT NOT NULL, pages_json TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'generating', created_at INTEGER NOT NULL)`),
-  db.prepare(`CREATE INDEX IF NOT EXISTS idx_stories_status_created ON stories(status, created_at DESC)`)
+  db.prepare(`CREATE INDEX IF NOT EXISTS idx_stories_status_created ON stories(status, created_at DESC)`),
+  db.prepare(`CREATE TABLE IF NOT EXISTS image_slots (slot INTEGER PRIMARY KEY, story_id TEXT, page INTEGER, locked_until INTEGER NOT NULL DEFAULT 0)`),
+  db.prepare(`INSERT OR IGNORE INTO image_slots (slot,locked_until) VALUES (1,0),(2,0),(3,0)`)
  ]);
 }
 export function rowToStory(row:any):StoryRecord{return {...row,pages:JSON.parse(row.pages_json)}}
