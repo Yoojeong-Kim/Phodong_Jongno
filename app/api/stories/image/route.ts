@@ -22,7 +22,7 @@ export async function POST(req:Request){
   let referenceBytes:ArrayBuffer;
   if(page>0){const first=await env.STORY_IMAGES.get(`stories/${id}/page-1-style-v2.png`);if(!first)return Response.json({error:"첫 번째 그림부터 다시 만들어 줘."},{status:409});referenceBytes=await first.arrayBuffer()}
   else{const style=await fetch(new URL("/story-style-reference-v1.png",req.url));if(!style.ok)throw new Error("스타일 기준 이미지를 찾지 못했어.");referenceBytes=await style.arrayBuffer()}
-  const form=new FormData();form.append("model","gpt-image-2");form.append("prompt",prompt);form.append("size","1024x1024");form.append("quality","high");form.append("output_format","png");form.append("image",new Blob([referenceBytes],{type:"image/png"}),page===0?"fixed-style-reference.png":"page-one-character-reference.png");
+  const form=new FormData();form.append("model","gpt-image-2");form.append("prompt",prompt);form.append("size","1024x1024");form.append("quality","medium");form.append("output_format","png");form.append("image",new Blob([referenceBytes],{type:"image/png"}),page===0?"fixed-style-reference.png":"page-one-character-reference.png");
   const response=await fetch("https://api.openai.com/v1/images/edits",{method:"POST",headers:{Authorization:`Bearer ${openAIKey()}`},body:form});
   if(!response.ok){const detail=await response.text();console.error("image_api",response.status,detail.slice(0,500));throw new Error(`이미지 API 오류 ${response.status}`)}
   const data=await response.json() as any,b64=data.data?.[0]?.b64_json;if(!b64)throw new Error("이미지 데이터 없음");

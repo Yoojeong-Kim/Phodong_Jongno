@@ -11,16 +11,23 @@ export default function Home(){
  async function choose(e:ChangeEvent<HTMLInputElement>){const f=e.target.files?.[0];if(!f)return;setError("");try{const bitmap=await createImageBitmap(f);const max=960,scale=Math.min(1,max/Math.max(bitmap.width,bitmap.height)),canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));canvas.getContext("2d")!.drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();const blob=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(v=>v?resolve(v):reject(new Error()),"image/jpeg",.68));const normalized=new File([blob],"phodong-photo.jpg",{type:"image/jpeg"});if(photo)URL.revokeObjectURL(photo);setPhoto(URL.createObjectURL(normalized));setPhotoFile(normalized)}catch{setError("이 사진은 읽기 어려워. 카메라로 다시 찍거나 다른 사진을 골라 줘.");setPhoto("");setPhotoFile(null)}finally{e.target.value=""}}
  function go(n:number){setView("make");setStep(n);window.scrollTo({top:0,behavior:"smooth"})}
  async function fileData(f:File){return await new Promise<string>((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result));r.onerror=reject;r.readAsDataURL(f)})}
+ async function readApi(res:Response){const type=res.headers.get("content-type")||"";if(!type.includes("application/json"))throw new Error("포동이가 그림을 저장하고 있어. 잠시만 기다려 줘.");return await res.json()}
+ async function makeImage(id:string,page:number){
+  for(let attempt=0;attempt<2;attempt++){
+   try{const res=await fetch("/api/stories/image",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id,page})});const data=await readApi(res);if(!res.ok)throw new Error(data.error||"삽화를 만들지 못했어.");return data}
+   catch(e){if(attempt===1)throw e;setProgress(`포동이가 ${page+1}번째 그림을 예쁘게 마무리하고 있어 · ${page+1}/7`);await new Promise(resolve=>setTimeout(resolve,20000))}
+  }
+ }
  async function createStory(){
   if(!photoFile)return;setCreating(true);setError("");setProgress("포동이가 사진 속 물건을 살펴보고 있어");
   try{
    const res=await fetch("/api/stories",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({childName:name,objectName:thing,meaning,genre,appearance:`${hero}, ${hair}, ${hairTexture}`,photo:await fileData(photoFile)})});
-   const data=await res.json();if(!res.ok)throw new Error(data.error||"동화를 만들지 못했어.");let made:Story=data.story;setStory(made);
-   for(let i=0;i<7;i++){setProgress(`포동이가 ${i+1}번째 삽화를 그리고 있어 · ${i+1}/7`);const ir=await fetch("/api/stories/image",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:made.id,page:i})});const idata=await ir.json();if(!ir.ok)throw new Error(idata.error||"삽화를 만들지 못했어.");made={...made,pages:made.pages.map((p,j)=>j===i?{...p,image_url:idata.image_url}:p)};setStory(made)}
+   const data=await readApi(res);if(!res.ok)throw new Error(data.error||"동화를 만들지 못했어.");let made:Story=data.story;setStory(made);
+   for(let i=0;i<7;i++){setProgress(`포동이가 ${i+1}번째 삽화를 그리고 있어 · ${i+1}/7`);const idata=await makeImage(made.id,i);made={...made,pages:made.pages.map((p,j)=>j===i?{...p,image_url:idata.image_url}:p)};setStory(made)}
    made={...made,status:"complete"};setStory(made);setPage(0);go(4);
   }catch(e){setError(e instanceof Error?e.message:"잠시 후 다시 시도해 줘.")}finally{setCreating(false)}
  }
- async function openGallery(){setEntered(true);setView("gallery");setLoadingGallery(true);setError("");try{const r=await fetch("/api/stories");const d=await r.json();if(!r.ok)throw new Error(d.error);setStories(d.stories||[])}catch(e){setError(e instanceof Error?e.message:"동화를 불러오지 못했어.")}finally{setLoadingGallery(false)}}
+ async function openGallery(){setEntered(true);setView("gallery");setLoadingGallery(true);setError("");try{const r=await fetch("/api/stories");const d=await readApi(r);if(!r.ok)throw new Error(d.error);setStories(d.stories||[])}catch(e){setError(e instanceof Error?e.message:"동화를 불러오지 못했어.")}finally{setLoadingGallery(false)}}
  function openStory(s:Story){setStory(s);setPage(0);setView("make");setStep(4)}
  if(!entered)return <main className="entrance"><button className="entrance-stage" onClick={()=>setEntered(true)} aria-label="포동 이야기 놀이터 들어가기"><span className="orb"><img src="/phodong-mascot.png" alt=""/><i/><b className="sp a">✦</b><b className="sp b">✦</b></span></button><style>{css}</style></main>;
  return <main className="inside"><header><button className="logo" onClick={()=>{setEntered(false);setView("make");setStep(0)}}><img src="/phodong-logo.png" alt="포동"/></button>{view==="make"&&<div className="progress">{[0,1,2,3,4].map(i=><i key={i} className={i<=step?"on":""}/>)}</div>}<button className="home" onClick={view==="gallery"?()=>go(0):openGallery}>{view==="gallery"?"이야기 만들기":"친구들의 동화"}</button></header>
