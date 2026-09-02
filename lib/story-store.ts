@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 
 export type StoryPage={page:number;title:string;text:string;image_prompt:string;image_url?:string};
-export type StoryRecord={id:string;child_name:string;genre:string;object_name:string;title:string;summary:string;pages:StoryPage[];stickers?:unknown[];status:string;created_at:number};
+export type StoryRecord={id:string;child_name:string;genre:string;object_name:string;title:string;summary:string;pages:StoryPage[];stickers?:unknown[];drawings?:unknown[];status:string;created_at:number};
 
 export async function ensureStoryTables(){
  const db=env.DB;
@@ -13,5 +13,5 @@ export async function ensureStoryTables(){
   db.prepare(`CREATE TABLE IF NOT EXISTS story_stickers (story_id TEXT PRIMARY KEY, stickers_json TEXT NOT NULL DEFAULT '[]')`)
  ]);
 }
-export function rowToStory(row:any):StoryRecord{return {...row,pages:JSON.parse(row.pages_json),stickers:JSON.parse(row.stickers_json||"[]")}}
+export function rowToStory(row:any):StoryRecord{const saved=JSON.parse(row.stickers_json||"[]"),decoration=Array.isArray(saved)?{stickers:saved,drawings:[]}:{stickers:saved.stickers||[],drawings:saved.drawings||[]};return {...row,pages:JSON.parse(row.pages_json),...decoration}}
 export function openAIKey(){const key=(env as any).OPENAI_API_KEY||process.env.OPENAI_API_KEY;if(!key)throw new Error("OPENAI_API_KEY is not configured");return key}
