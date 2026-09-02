@@ -38,15 +38,17 @@ export async function POST(req:Request){
   await ensureStoryTables();
   const count=await env.DB.prepare("SELECT COUNT(*) AS count FROM stories").first<{count:number}>();
   if((count?.count||0)>=30)return Response.json({error:"오늘 준비한 동화를 모두 만들었어. 관리자에게 알려 줘!"},{status:429});
-  const body=await req.json() as any;
-  const childName=String(body.childName||"").trim().slice(0,20),objectName=String(body.objectName||"").trim().slice(0,40),meaning=String(body.meaning||"").trim().slice(0,300),genre=String(body.genre||""),appearance=String(body.appearance||"").trim().slice(0,100),photo=String(body.photo||"");
-  if(!childName||!objectName||!meaning||!appearance||!genres.has(genre)||!photo.startsWith("data:image/"))return Response.json({error:"입력한 내용을 다시 확인해 줘."},{status:400});
-  if(!/^data:image\/(jpeg|png|webp|gif);base64,/i.test(photo))return Response.json({error:"사진을 읽기 어려워. 다시 찍거나 다른 사진을 골라 줘."},{status:400});
-  const key=openAIKey(),userText=storyInput({childName,objectName,meaning,genre,appearance});
+  const body=await req.json() as any,genre=String(body.genre||"");
+  const objects=(Array.isArray(body.objects)?body.objects:[]).slice(0,3).map((v:any)=>({name:String(v?.name||"").trim().slice(0,40),reason:String(v?.reason||"").trim().slice(0,300),photo:String(v?.photo||"")}));
+  const characters=(Array.isArray(body.characters)?body.characters:[]).slice(0,3).map((v:any)=>({name:String(v?.name||"").trim().slice(0,20),appearance:String(v?.appearance||"").trim().slice(0,100)}));
+  if(objects.length<1||objects.length>3||characters.length<1||characters.length>3||objects.some(v=>!v.name||!v.photo)||characters.some(v=>!v.name||!v.appearance)||!genres.has(genre))return Response.json({error:"입력한 내용을 다시 확인해 줘."},{status:400});
+  if(objects.some(v=>!/^data:image\/(jpeg|png|webp|gif);base64,/i.test(v.photo)))return Response.json({error:"사진을 읽기 어려워. 다시 찍거나 다른 사진을 골라 줘."},{status:400});
+  const childName=characters.map(v=>v.name).join(" · "),objectName=objects.map(v=>v.name).join(" · ");
+  const key=openAIKey(),userText=storyInput({characters,objects:objects.map(({name,reason})=>({name,reason})),genre});
   stage="moderation";
-  try{const moderation=await openAIFetch("https://api.openai.com/v1/moderations",{method:"POST",headers:{Authorization:`Bearer ${key}`,"Content-Type":"application/json"},body:JSON.stringify({model:"omni-moderation-latest",input:[{type:"text",text:userText},{type:"image_url",image_url:{url:photo}}]})},1);if(moderation.ok){const mod=await moderation.json() as any;if(mod.results?.[0]?.flagged)return Response.json({error:"다른 사진이나 이야기로 다시 시도해 줘."},{status:400})}}catch(e){console.warn("moderation_skipped",e instanceof Error?e.message:String(e))}
+  try{const moderation=await openAIFetch("https://api.openai.com/v1/moderations",{method:"POST",headers:{Authorization:`Bearer ${key}`,"Content-Type":"application/json"},body:JSON.stringify({model:"omni-moderation-latest",input:[{type:"text",text:userText},...objects.map(v=>({type:"image_url",image_url:{url:v.photo}}))]})},1);if(moderation.ok){const mod=await moderation.json() as any;if(mod.results?.[0]?.flagged)return Response.json({error:"다른 사진이나 이야기로 다시 시도해 줘."},{status:400})}}catch(e){console.warn("moderation_skipped",e instanceof Error?e.message:String(e))}
   stage="story_api";
-  const response=await openAIFetch("https://api.openai.com/v1/responses",{method:"POST",headers:{Authorization:`Bearer ${key}`,"Content-Type":"application/json"},body:JSON.stringify({model:"gpt-5.4-mini",reasoning:{effort:"low"},input:[{role:"system",content:[{type:"input_text",text:STORY_SYSTEM_PROMPT}]},{role:"user",content:[{type:"input_text",text:userText},{type:"input_image",image_url:photo}]}],text:{format:{type:"json_schema",name:"phodong_story",strict:true,schema:storySchema}}})});
+  const response=await openAIFetch("https://api.openai.com/v1/responses",{method:"POST",headers:{Authorization:`Bearer ${key}`,"Content-Type":"application/json"},body:JSON.stringify({model:"gpt-5.4-mini",reasoning:{effort:"low"},input:[{role:"system",content:[{type:"input_text",text:STORY_SYSTEM_PROMPT}]},{role:"user",content:[{type:"input_text",text:userText},...objects.map(v=>({type:"input_image",image_url:v.photo}))]}],text:{format:{type:"json_schema",name:"phodong_story",strict:true,schema:storySchema}}})});
   if(!response.ok){const detail=await response.text();console.error("story_api",response.status,detail.slice(0,500));if(response.status===400)return Response.json({error:"사진을 읽기 어려워. 다시 찍거나 다른 사진을 골라 줘."},{status:400});if(response.status===429)return Response.json({error:"포동이가 잠깐 너무 바빠. 1분 뒤 다시 눌러 줘."},{status:429});throw new Error(`동화 API 오류 ${response.status}`)}
   const generated=JSON.parse(outputText(await response.json()));
   stage="save";
