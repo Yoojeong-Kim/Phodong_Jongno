@@ -12,9 +12,21 @@ async function openAIFetch(url:string,init:RequestInit,retries=2){let response:R
 export async function GET(req:Request){
  await ensureStoryTables();
  const id=new URL(req.url).searchParams.get("id");
- if(id){const row=await env.DB.prepare("SELECT * FROM stories WHERE id=? AND status='complete'").bind(id).first();return row?Response.json(rowToStory(row)):Response.json({error:"동화를 찾지 못했어."},{status:404})}
- const result=await env.DB.prepare("SELECT * FROM stories WHERE status='complete' ORDER BY created_at DESC LIMIT 60").all();
+ if(id){const row=await env.DB.prepare("SELECT stories.*, COALESCE(story_stickers.stickers_json,'[]') AS stickers_json FROM stories LEFT JOIN story_stickers ON story_stickers.story_id=stories.id WHERE stories.id=? AND stories.status='complete'").bind(id).first();return row?Response.json(rowToStory(row)):Response.json({error:"동화를 찾지 못했어."},{status:404})}
+ const result=await env.DB.prepare("SELECT stories.*, COALESCE(story_stickers.stickers_json,'[]') AS stickers_json FROM stories LEFT JOIN story_stickers ON story_stickers.story_id=stories.id WHERE stories.status='complete' ORDER BY stories.created_at DESC LIMIT 60").all();
  return Response.json({stories:(result.results||[]).map(rowToStory)});
+}
+
+export async function PUT(req:Request){
+ try{
+  await ensureStoryTables();
+  const body=await req.json() as any,id=String(body.id||""),raw=Array.isArray(body.stickers)?body.stickers:[];
+  if(!/^[0-9a-f-]{36}$/.test(id)||raw.length>60)return Response.json({error:"스티커를 저장하지 못했어."},{status:400});
+  const stickers=raw.map((v:any)=>({id:String(v?.id||"").slice(0,50),src:String(v?.src||""),page:Number(v?.page),x:Number(v?.x),y:Number(v?.y),size:Number(v?.size)}));
+  if(stickers.some(v=>!v.id||!/^\/stickers\/sticker-\d{2}\.png$/.test(v.src)||!Number.isInteger(v.page)||v.page<0||v.page>4||!Number.isFinite(v.x)||v.x<0||v.x>100||!Number.isFinite(v.y)||v.y<0||v.y>100||!Number.isFinite(v.size)||v.size<50||v.size>240))return Response.json({error:"스티커 위치를 다시 확인해 줘."},{status:400});
+  await env.DB.prepare("INSERT INTO story_stickers (story_id,stickers_json) VALUES (?,?) ON CONFLICT(story_id) DO UPDATE SET stickers_json=excluded.stickers_json").bind(id,JSON.stringify(stickers)).run();
+  return Response.json({saved:true});
+ }catch(e){console.error("sticker_save_failed",e);return Response.json({error:"스티커를 저장하지 못했어."},{status:500})}
 }
 
 export async function DELETE(req:Request){
@@ -26,6 +38,7 @@ export async function DELETE(req:Request){
   if(!found)return Response.json({error:"이미 지워진 동화야."},{status:404});
   const keys=[];for(let page=1;page<=7;page++){keys.push(`stories/${id}/page-${page}.png`,`stories/${id}/page-${page}-style-v2.png`)}
   await env.STORY_IMAGES.delete(keys);
+  await env.DB.prepare("DELETE FROM story_stickers WHERE story_id=?").bind(id).run();
   await env.DB.prepare("DELETE FROM stories WHERE id=?").bind(id).run();
   return Response.json({deleted:true});
  }catch(e){console.error("story_delete_failed",e);return Response.json({error:"동화를 지우지 못했어."},{status:500})}
