@@ -1,8 +1,15 @@
 import { env } from "cloudflare:workers";
+import { ensureStoryTables } from "../../../../../lib/story-store";
+
 export async function GET(_:Request,{params}:{params:Promise<{id:string,file:string}>}){
  const {id,file}=await params;
  if(!/^[0-9a-f-]{36}$/.test(id)||!/^page-[1-7](?:-style-v2)?\.png$/.test(file))return new Response("Not found",{status:404});
- const object=await env.STORY_IMAGES.get(`stories/${id}/${file}`);
- if(!object)return new Response("Not found",{status:404});
- return new Response(object.body,{headers:{"Content-Type":"image/png","Cache-Control":"public, max-age=31536000, immutable"}});
+ await ensureStoryTables();
+ const key=`stories/${id}/${file}`;
+ const row=await env.DB.prepare("SELECT b64 FROM story_images WHERE key=?").bind(key).first<{b64:string}>();
+ if(!row?.b64)return new Response("Not found",{status:404});
+ const bin=atob(row.b64);
+ const bytes=new Uint8Array(bin.length);
+ for(let i=0;i<bin.length;i++){bytes[i]=bin.charCodeAt(i);}
+ return new Response(bytes.buffer,{headers:{"Content-Type":"image/png","Cache-Control":"public, max-age=31536000, immutable"}});
 }

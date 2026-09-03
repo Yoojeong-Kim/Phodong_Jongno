@@ -38,8 +38,7 @@ export async function DELETE(req:Request){
   if(!/^[0-9a-f-]{36}$/.test(id))return Response.json({error:"잘못된 동화야."},{status:400});
   const found=await env.DB.prepare("SELECT id FROM stories WHERE id=?").bind(id).first();
   if(!found)return Response.json({error:"이미 지워진 동화야."},{status:404});
-  const keys=[];for(let page=1;page<=7;page++){keys.push(`stories/${id}/page-${page}.png`,`stories/${id}/page-${page}-style-v2.png`)}
-  await env.STORY_IMAGES.delete(keys);
+  await env.DB.prepare("DELETE FROM story_images WHERE key LIKE ?").bind(`stories/${id}/%`).run();
   await env.DB.prepare("DELETE FROM story_stickers WHERE story_id=?").bind(id).run();
   await env.DB.prepare("DELETE FROM stories WHERE id=?").bind(id).run();
   return Response.json({deleted:true});

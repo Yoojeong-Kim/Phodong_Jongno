@@ -10,7 +10,9 @@ export async function ensureStoryTables(){
   db.prepare(`CREATE INDEX IF NOT EXISTS idx_stories_status_created ON stories(status, created_at DESC)`),
   db.prepare(`CREATE TABLE IF NOT EXISTS image_slots (slot INTEGER PRIMARY KEY, story_id TEXT, page INTEGER, locked_until INTEGER NOT NULL DEFAULT 0)`),
   db.prepare(`INSERT OR IGNORE INTO image_slots (slot,locked_until) VALUES (1,0),(2,0),(3,0)`),
-  db.prepare(`CREATE TABLE IF NOT EXISTS story_stickers (story_id TEXT PRIMARY KEY, stickers_json TEXT NOT NULL DEFAULT '[]')`)
+  db.prepare(`CREATE TABLE IF NOT EXISTS story_stickers (story_id TEXT PRIMARY KEY, stickers_json TEXT NOT NULL DEFAULT '[]')`),
+  db.prepare(`CREATE TABLE IF NOT EXISTS story_images (key TEXT PRIMARY KEY, b64 TEXT NOT NULL, created_at INTEGER NOT NULL)`),
+  db.prepare(`CREATE INDEX IF NOT EXISTS idx_story_images_key ON story_images(key)`)
  ]);
 }
 export function rowToStory(row:any):StoryRecord{const saved=JSON.parse(row.stickers_json||"[]"),decoration=Array.isArray(saved)?{stickers:saved,drawings:[]}:{stickers:saved.stickers||[],drawings:saved.drawings||[]};return {...row,pages:JSON.parse(row.pages_json),...decoration}}
