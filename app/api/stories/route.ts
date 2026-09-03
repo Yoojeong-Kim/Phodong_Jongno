@@ -54,7 +54,7 @@ export async function POST(req:Request){
   if((count?.count||0)>=30)return Response.json({error:"오늘 준비한 동화를 모두 만들었어. 관리자에게 알려 줘!"},{status:429});
   const body=await req.json() as any,genre=String(body.genre||""),includePhodong=body.includePhodong===true;
   const objects=(Array.isArray(body.objects)?body.objects:[]).slice(0,3).map((v:any)=>({name:String(v?.name||"").trim().slice(0,40),reason:String(v?.reason||"").trim().slice(0,300),photo:String(v?.photo||"")}));
-  const characters=(Array.isArray(body.characters)?body.characters:[]).slice(0,3).map((v:any)=>({name:String(v?.name||"").trim().slice(0,20),appearance:String(v?.appearance||"").trim().slice(0,100)}));
+  const characters=(Array.isArray(body.characters)?body.characters:[]).slice(0,3).map((v:any)=>({name:String(v?.name||"").trim().slice(0,20),appearance:String(v?.appearance||"").trim().slice(0,300)}));
   if(objects.length<1||objects.length>3||characters.length<1||characters.length>3||objects.some(v=>!v.name||!v.photo)||characters.some(v=>!v.name||!v.appearance)||!genres.has(genre))return Response.json({error:"입력한 내용을 다시 확인해 줘."},{status:400});
   if(objects.some(v=>!/^data:image\/(jpeg|png|webp|gif);base64,/i.test(v.photo)))return Response.json({error:"사진을 읽기 어려워. 다시 찍거나 다른 사진을 골라 줘."},{status:400});
   const childName=characters.map(v=>v.name).join(" · "),objectName=objects.map(v=>v.name).join(" · ");
@@ -62,9 +62,11 @@ export async function POST(req:Request){
   stage="moderation";
   try{const moderation=await openAIFetch("https://api.openai.com/v1/moderations",{method:"POST",headers:{Authorization:`Bearer ${key}`,"Content-Type":"application/json"},body:JSON.stringify({model:"omni-moderation-latest",input:[{type:"text",text:userText},...objects.map(v=>({type:"image_url",image_url:{url:v.photo}}))]})},1);if(moderation.ok){const mod=await moderation.json() as any;if(mod.results?.[0]?.flagged)return Response.json({error:"다른 사진이나 이야기로 다시 시도해 줘."},{status:400})}}catch(e){console.warn("moderation_skipped",e instanceof Error?e.message:String(e))}
   stage="story_api";
-  const response=await openAIFetch("https://api.openai.com/v1/responses",{method:"POST",headers:{Authorization:`Bearer ${key}`,"Content-Type":"application/json"},body:JSON.stringify({model:"gpt-4o-mini",input:[{role:"system",content:[{type:"input_text",text:STORY_SYSTEM_PROMPT}]},{role:"user",content:[{type:"input_text",text:userText},...objects.map(v=>({type:"input_image",image_url:v.photo}))]}],text:{format:{type:"json_schema",name:"phodong_story",strict:true,schema:storySchema}}})});
+  const response=await openAIFetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{Authorization:`Bearer ${key}`,"Content-Type":"application/json"},body:JSON.stringify({model:"gpt-4o-mini",messages:[{role:"system",content:STORY_SYSTEM_PROMPT},{role:"user",content:[{type:"text",text:userText},...objects.map(v=>({type:"image_url",image_url:{url:v.photo,detail:"low"}}))]}],response_format:{type:"json_schema",json_schema:{name:"phodong_story",strict:true,schema:storySchema}},max_tokens:4096})});
   if(!response.ok){const detail=await response.text();console.error("story_api",response.status,detail.slice(0,500));if(response.status===400)return Response.json({error:"사진을 읽기 어려워. 다시 찍거나 다른 사진을 골라 줘."},{status:400});if(response.status===429)return Response.json({error:"포동이가 잠깐 너무 바빠. 1분 뒤 다시 눌러 줘."},{status:429});throw new Error(`동화 API 오류 ${response.status}`)}
-  const generated=JSON.parse(outputText(await response.json()));
+  const raw=await response.json() as any;
+  const generated=JSON.parse(raw.choices?.[0]?.message?.content||"null");
+  if(!generated||!generated.pages)throw new Error("동화 응답을 읽지 못했어.");
   stage="save";
   const id=crypto.randomUUID(),now=Date.now();
   await env.DB.prepare("INSERT INTO stories (id,child_name,genre,object_name,title,summary,pages_json,status,created_at) VALUES (?,?,?,?,?,?,?,'generating',?)").bind(id,childName,genre,objectName,generated.title,generated.summary,JSON.stringify(generated.pages),now).run();
