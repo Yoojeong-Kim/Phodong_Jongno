@@ -12,10 +12,10 @@ const colors=["#ef5f89","#ff9f43","#ffd43b","#57b77a","#4d91e8","#7558c9","#3d29
 
 function BookPage({story,page}:{story:StoryData;page:number}){const p=story.pages[page];return <><div className="visual">{p.image_url?<img src={p.image_url} alt={`${p.title} 삽화`}/>:<div className="image-wait">삽화를 불러오고 있어</div>}<span>{page+1} / {story.pages.length}</span></div><article><small>{story.child_name}의 {story.genre} 동화</small><h2>{page===0?story.title:p.title}</h2><p>{p.text}</p></article></>}
 
-export function ReaderBook({story,onSave,onDecorate,isFromGallery}:{story:StoryData;onSave:()=>void;onDecorate?:()=>void;isFromGallery?:boolean}){
+export function ReaderBook({story,onSave,onDecorate,isFromGallery,initialItems}:{story:StoryData;onSave:()=>void;onDecorate?:()=>void;isFromGallery?:boolean;initialItems?:{photo:string;name:string;reason:string}[]}){
  const [showCover,setShowCover]=useState(true);
  const [page,setPage]=useState(0),[turning,setTurning]=useState<"next"|"prev"|null>(null),touch=useRef(0);
- function turn(n:number){if(n<0||n>=story.pages.length||n===page||turning)return;setTurning(n>page?"next":"prev");setPage(n);setTimeout(()=>setTurning(null),480)}
+ function turn(n:number){if(n<0||n>story.pages.length||n===page||turning)return;setTurning(n>page?"next":"prev");setPage(n);setTimeout(()=>setTurning(null),480)}
  const pageStrokes=(story.drawings||[]).filter(s=>s.page===page),pageStickers=(story.stickers||[]).filter(s=>s.page===page);
  
  if(showCover){
@@ -34,6 +34,35 @@ export function ReaderBook({story,onSave,onDecorate,isFromGallery}:{story:StoryD
    </section>
  }
 
+ if (page === story.pages.length) {
+   return <section className="screen story reader">
+    <div className={`book cover-mode ${turning?`turn-${turning}`:""}`} onTouchStart={e=>touch.current=e.touches[0].clientX} onTouchEnd={e=>{const d=e.changedTouches[0].clientX-touch.current;if(Math.abs(d)>55)turn(page+(d>0?-1:1))}}>
+     <div className="back-cover" style={{width:"100%",height:"100%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"40px",textAlign:"center",background:"linear-gradient(145deg, #fff0f5, #ffe2ec)",overflowY:"auto"}}>
+      <h2 style={{fontSize:"clamp(24px, 4vw, 36px)",color:"#cf3468",marginBottom:"12px"}}>포동이와 함께한 모험, 어땠어?</h2>
+      <p style={{fontSize:"18px",color:"#684d59",marginBottom:"32px",wordBreak:"keep-all"}}>우리가 고른 <strong>{story.genre}</strong> 세상에서 멋진 일들이 있었지!</p>
+      
+      {initialItems && initialItems.length > 0 && initialItems.some(v=>v.photo) && (
+        <div className="back-cover-items" style={{display:"flex",gap:"16px",flexWrap:"wrap",justifyContent:"center",marginBottom:"40px",width:"100%"}}>
+          {initialItems.filter(v=>v.photo).map((item,i) => (
+            <div key={i} className="back-cover-item" style={{background:"#fff",padding:"12px",borderRadius:"20px",boxShadow:"0 12px 32px rgba(207,52,104,0.12)",maxWidth:"260px",width:"100%"}}>
+              {item.photo && <img src={item.photo} style={{width:"100%",height:"180px",objectFit:"cover",borderRadius:"12px",marginBottom:"12px"}} alt="소중한 물건"/>}
+              <h3 style={{fontSize:"18px",margin:"0 0 6px",color:"#3d2940"}}>{item.name}</h3>
+              <p style={{fontSize:"14px",color:"#7a636f",margin:0,lineHeight:"1.5"}}>{item.reason}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <nav className="book-nav" style={{position:"static",marginTop:"auto",width:"100%",maxWidth:"450px",display:"flex",justifyContent:"space-between",background:"none"}}>
+       <button onClick={()=>turn(page-1)}>← 이야기로</button>
+       {isFromGallery?(onDecorate?<button className="save-story" onClick={onDecorate}>🎨 꾸미러 가기</button>:<button className="save-story" onClick={onSave}>책장으로</button>):<button className="save-story" onClick={onSave}>동화 저장하기</button>}
+      </nav>
+     </div>
+    </div>
+    <style>{styles}</style>
+   </section>
+ }
+
  return <section className="screen story reader">
   <div className={`book ${turning?`turn-${turning}`:""}`} onTouchStart={e=>touch.current=e.touches[0].clientX} onTouchEnd={e=>{const d=e.changedTouches[0].clientX-touch.current;if(Math.abs(d)>55)turn(page+(d>0?-1:1))}}>
    {isFromGallery&&onDecorate&&<button className="gallery-decorate-badge" onClick={onDecorate}>🎨 이 동화 꾸미기</button>}
@@ -43,7 +72,7 @@ export function ReaderBook({story,onSave,onDecorate,isFromGallery}:{story:StoryD
    <nav className="book-nav">
     <button disabled={page===0} onClick={()=>turn(page-1)}>앞 페이지</button>
     <div>{story.pages.map((_,i)=><button key={i} className={page===i?"on":""} onClick={()=>turn(i)} aria-label={`${i+1}쪽`}/>)}</div>
-    {page<story.pages.length-1?<button onClick={()=>turn(page+1)}>다음 페이지</button>:isFromGallery?(onDecorate?<button className="save-story" onClick={onDecorate}>🎨 꾸미러 가기</button>:<button className="save-story" onClick={onSave}>책장으로</button>):<button className="save-story" onClick={onSave}>동화 저장하기</button>}
+    {page<story.pages.length?<button onClick={()=>turn(page+1)}>다음 페이지</button>:null}
    </nav>
   </div>
   <style>{styles}</style>
