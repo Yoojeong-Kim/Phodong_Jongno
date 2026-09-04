@@ -13,9 +13,27 @@ const colors=["#ef5f89","#ff9f43","#ffd43b","#57b77a","#4d91e8","#7558c9","#3d29
 function BookPage({story,page}:{story:StoryData;page:number}){const p=story.pages[page];return <><div className="visual">{p.image_url?<img src={p.image_url} alt={`${p.title} 삽화`}/>:<div className="image-wait">삽화를 불러오고 있어</div>}<span>{page+1} / {story.pages.length}</span></div><article><small>{story.child_name}의 {story.genre} 동화</small><h2>{page===0?story.title:p.title}</h2><p>{p.text}</p></article></>}
 
 export function ReaderBook({story,onSave,onDecorate,isFromGallery}:{story:StoryData;onSave:()=>void;onDecorate?:()=>void;isFromGallery?:boolean}){
+ const [showCover,setShowCover]=useState(true);
  const [page,setPage]=useState(0),[turning,setTurning]=useState<"next"|"prev"|null>(null),touch=useRef(0);
  function turn(n:number){if(n<0||n>=story.pages.length||n===page||turning)return;setTurning(n>page?"next":"prev");setPage(n);setTimeout(()=>setTurning(null),480)}
  const pageStrokes=(story.drawings||[]).filter(s=>s.page===page),pageStickers=(story.stickers||[]).filter(s=>s.page===page);
+ 
+ if(showCover){
+   const p1=story.pages[0];
+   return <section className="screen story reader">
+    <div className="book cover-mode" onClick={()=>setShowCover(false)} style={{cursor:"pointer",display:"block"}}>
+     <div className="cover-visual" style={{height:"100%",position:"relative"}}>
+      {p1?.image_url?<img src={p1.image_url} style={{width:"100%",height:"100%",objectFit:"cover"}} alt="표지"/>:<div className="image-wait">표지를 불러오고 있어</div>}
+      <div className="cover-overlay">
+       <h1>{story.title}</h1>
+       <p className="pulse-text">✨ 책을 터치해서 열어봐 ✨</p>
+      </div>
+     </div>
+    </div>
+    <style>{styles}</style>
+   </section>
+ }
+
  return <section className="screen story reader">
   <div className={`book ${turning?`turn-${turning}`:""}`} onTouchStart={e=>touch.current=e.touches[0].clientX} onTouchEnd={e=>{const d=e.changedTouches[0].clientX-touch.current;if(Math.abs(d)>55)turn(page+(d>0?-1:1))}}>
    {isFromGallery&&onDecorate&&<button className="gallery-decorate-badge" onClick={onDecorate}>🎨 이 동화 꾸미기</button>}
@@ -86,9 +104,13 @@ const styles=`
 .sticker-tools{position:sticky;z-index:20;bottom:12px;margin:8px auto 0;width:max-content;display:flex;gap:6px;background:#3d2940e8;padding:7px;border-radius:99px}
 .sticker-tools button{border:0;background:#fff;border-radius:99px;padding:8px 13px}
 .sticker-ghost{position:fixed;z-index:100;width:120px;max-height:150px;object-fit:contain;transform:translate(-50%,-50%);pointer-events:none}
-.decorate-footer{max-width:760px;margin:14px auto 0;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.cover-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.3);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-shadow:0 4px 12px rgba(0,0,0,0.5)}
+.cover-overlay h1{font-size:clamp(36px,5vw,60px);font-weight:900;margin-bottom:24px;text-align:center;word-break:keep-all;padding:0 20px;line-height:1.2}
+.pulse-text{font-size:clamp(16px,2vw,22px);font-weight:700;animation:pulse 2s infinite;background:rgba(255,255,255,0.2);padding:10px 24px;border-radius:99px;backdrop-filter:blur(4px)}
+@keyframes pulse{0%{transform:scale(1);opacity:0.8}50%{transform:scale(1.05);opacity:1}100%{transform:scale(1);opacity:0.8}}
 @media(max-width:850px){
  .reader .book{grid-template-columns:1fr;grid-template-rows:44% 56%;height:calc(100svh - 220px);min-height:480px}
+ .reader .book.cover-mode{grid-template-rows:100%}
  .book-nav{left:16px;right:16px;bottom:14px}
  .reader .book article{padding:16px 20px 60px}
  .reader .book article h2{font-size:22px;margin:4px 0 8px}
