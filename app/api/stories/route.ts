@@ -69,7 +69,11 @@ export async function POST(req:Request){
   if(!generated||!generated.pages)throw new Error("동화 응답을 읽지 못했어.");
   stage="save";
   const id=crypto.randomUUID(),now=Date.now();
-  await env.DB.prepare("INSERT INTO stories (id,child_name,genre,object_name,title,summary,pages_json,status,created_at) VALUES (?,?,?,?,?,?,?,'generating',?)").bind(id,childName,genre,objectName,generated.title,generated.summary,JSON.stringify(generated.pages),now).run();
-  return Response.json({story:{id,child_name:childName,genre,object_name:objectName,title:generated.title,summary:generated.summary,pages:generated.pages,status:"generating",created_at:now}});
+  try{
+   await env.DB.prepare("INSERT INTO stories (id,child_name,genre,object_name,title,summary,pages_json,characters_json,status,created_at) VALUES (?,?,?,?,?,?,?,?,'generating',?)").bind(id,childName,genre,objectName,generated.title,generated.summary,JSON.stringify(generated.pages),JSON.stringify(characters),now).run();
+  }catch{
+   await env.DB.prepare("INSERT INTO stories (id,child_name,genre,object_name,title,summary,pages_json,status,created_at) VALUES (?,?,?,?,?,?,?,'generating',?)").bind(id,childName,genre,objectName,generated.title,generated.summary,JSON.stringify(generated.pages),now).run();
+  }
+  return Response.json({story:{id,child_name:childName,genre,object_name:objectName,title:generated.title,summary:generated.summary,pages:generated.pages,characters,status:"generating",created_at:now}});
  }catch(e){console.error("story_create_failed",stage,e instanceof Error?e.message:String(e));return Response.json({error:stage==="save"?"동화는 만들었는데 저장하지 못했어. 한 번만 다시 눌러 줘.":"포동이가 잠깐 멈췄어. 사진은 그대로 두고 한 번만 다시 눌러 줘."},{status:500})}
 }
