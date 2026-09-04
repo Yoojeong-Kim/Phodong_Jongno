@@ -11,5 +11,5 @@ export async function GET(_:Request,{params}:{params:Promise<{id:string,file:str
  const bin=atob(row.b64);
  const bytes=new Uint8Array(bin.length);
  for(let i=0;i<bin.length;i++){bytes[i]=bin.charCodeAt(i);}
- return new Response(bytes.buffer,{headers:{"Content-Type":"image/png","Cache-Control":"public, max-age=86400"}});
+ return new Response(bytes.buffer,{headers:{"Content-Type":"image/png","Cache-Control":"no-store, no-cache, must-revalidate, max-age=0"}});
 }
