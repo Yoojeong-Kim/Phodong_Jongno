@@ -40,7 +40,7 @@ Environment: Softly storybook-like, cozy, magical, and gently idealized with rou
 Absolute Constraints & Negative Rules: Absolutely NO muddy, dull, murky, greyish, gloomy, or dirty desaturated colors. NO gritty textures, NO photorealism, NO deformed anatomy, and NO harsh dark shadows. The entire image must be radiant, clean, heartwarming, and colorful. Absolutely NO text, letters, words, logos, subtitles, or watermarks.`;
 
   const STYLE_PRESERVE_INSTRUCTION = `[Absolute Visual & Style Continuity Lock]:
-* Strictly maintain the EXACT SAME ultra-polished premium 3D animation style, character face, facial proportions (large glossy eyes, cute blushing cheeks), hair color, hair styling, skin shading, and chosen clothing (outfit type and color) as seen in the attached Page 1 reference image.
+* Strictly maintain the EXACT SAME ultra-polished premium 3D animation style, character face, facial proportions (large glossy eyes, cute blushing cheeks), hair color, hair styling, skin shading, and chosen clothing (outfit type and color) across all pages.
 * Preserve the identical warm golden-peach palette, soft luminous volumetric lighting, and velvety/plush tactile material quality.
 * Only the character's pose, expression, camera angle, and background environment change to tell the new chapter of the story.`;
 
@@ -67,38 +67,25 @@ Absolute Constraints & Negative Rules: Absolutely NO muddy, dull, murky, greyish
 
   let response: Response;
 
+  const basePrompt = `[Masterpiece 3D CGI Storybook Illustration - Genre: ${story.genre}]\n\n${characterCountRule}\n\n[Characters in Scene]:\n${charAppearanceText}\n- Mascot: ${phodongIncluded?PHODONG:noPhodong}\n\n[Rendering & Art Style]:\n${STYLE}\n\n`;
+
   if(page === 0){
    // 1페이지: 전체 동화의 화풍과 캐릭터(주인공 + 포동이)를 결정짓는 핵심 앵커 생성
-   const anchorPrompt=`[Masterpiece 3D CGI Storybook Illustration - Page 1 Anchor Scene - Genre: ${story.genre}]\n\n${characterCountRule}\n\n[Scene 1 Action & Environment]:\n${target.text}\n${target.image_prompt}\n* Indoor cozy bedroom setting where the precious object '${story.object_name}' glows with magical light.\n\n[Characters in Scene]:\n${charAppearanceText}\n- Mascot: ${phodongIncluded?PHODONG:noPhodong}\n\n[Rendering & Art Style]:\n${STYLE}`;
+   const anchorPrompt=`${basePrompt}[Scene 1 Action & Environment]:\n${target.text}\n${target.image_prompt}\n* Indoor cozy bedroom setting where the precious object '${story.object_name}' glows with magical light.`;
 
    response=await fetch("https://api.openai.com/v1/images/generations",{
     method:"POST",
     headers:{Authorization:`Bearer ${openAIKey()}`,"Content-Type":"application/json"},
-    body:JSON.stringify({model:"gpt-image-1",prompt:anchorPrompt,size:"1024x1024",quality:"high",output_format:"png"})
+    body:JSON.stringify({model:"dall-e-3",prompt:anchorPrompt.substring(0, 4000),size:"1024x1024",quality:"hd",response_format:"b64_json"})
    });
   } else {
-   // 2~5페이지: 1페이지의 고화질 렌더링을 참조 이미지로 넘겨 인물과 화풍을 고정
-   const firstRow=await env.DB.prepare("SELECT b64 FROM story_images WHERE key=?").bind(`stories/${id}/page-1-style-v4.png`).first<{b64:string}>();
-   if(!firstRow?.b64)return Response.json({error:"첫 번째 그림부터 다시 만들어 줘."},{status:409});
+   // 2~5페이지: 텍스트 프롬프트를 통해 인물과 화풍 고정
+   const editPrompt=`${basePrompt}[Strict Character & Style Continuity]:\n* Every child (${story.child_name}) MUST keep their EXACT SAME face, gender, haircut, hair color, and outfit (outfit type and color) as established in previous pages. Exactly ${humanCount} child character(s) and ${phodongIncluded?"one Phodong bear":"no bear"}.\n* ${STYLE_PRESERVE_INSTRUCTION}\n\n[New Scene in ${story.genre} World]:\n${target.text}\n${target.image_prompt}\n* ${genreEnvGuide}\n\n[Action & Camera]:\n${sceneRules[page]}. Dynamic lively interactions.`;
 
-   const bin=atob(firstRow.b64);
-   const refU8=new Uint8Array(bin.length);
-   for(let i=0;i<bin.length;i++){refU8[i]=bin.charCodeAt(i);}
-
-   const editPrompt=`[3D CGI Storybook Continuation - Page ${page+1}/5 - Genre: ${story.genre}]\n\n${characterCountRule}\n\n[Character & Style Continuity from Reference Image]:\n* Look at the attached Page 1 reference image carefully. Every child (${story.child_name}) MUST keep their EXACT SAME face, gender, haircut, hair color, and outfit (outfit type and color) as established in the Page 1 reference image. Do NOT change gender, hairstyle, or clothing! Exactly ${humanCount} child character(s) and ${phodongIncluded?"one Phodong bear":"no bear"}.\n* ${STYLE_PRESERVE_INSTRUCTION}\n\n[New Scene in ${story.genre} World]:\n${target.text}\n${target.image_prompt}\n* ${genreEnvGuide}\n\n[Action & Camera]:\n${sceneRules[page]}. Dynamic lively interactions.\n\n[Art Style]:\n${STYLE}`;
-
-   const form=new FormData();
-   form.append("model","gpt-image-1");
-   form.append("prompt",editPrompt);
-   form.append("size","1024x1024");
-   form.append("quality","high");
-   form.append("output_format","png");
-   form.append("image",new Blob([refU8.buffer],{type:"image/png"}),"reference-character.png");
-
-   response=await fetch("https://api.openai.com/v1/images/edits",{
+   response=await fetch("https://api.openai.com/v1/images/generations",{
     method:"POST",
-    headers:{Authorization:`Bearer ${openAIKey()}`},
-    body:form
+    headers:{Authorization:`Bearer ${openAIKey()}`,"Content-Type":"application/json"},
+    body:JSON.stringify({model:"dall-e-3",prompt:editPrompt.substring(0, 4000),size:"1024x1024",quality:"hd",response_format:"b64_json"})
    });
   }
 
