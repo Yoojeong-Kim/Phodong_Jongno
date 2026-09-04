@@ -79,27 +79,14 @@ Absolute Constraints & Negative Rules: Absolutely NO muddy, dull, murky, greyish
     body:JSON.stringify({model:"gpt-image-2",prompt:anchorPrompt.substring(0, 4000),size:"1024x1024",quality:"medium"})
    });
   } else {
-   // 2~5페이지: 1페이지 이미지를 edit하여 배경/구도를 확확 바꾸면서 캐릭터만 유지
-   const firstRow=await env.DB.prepare("SELECT b64 FROM story_images WHERE key=?").bind(`stories/${id}/page-1-style-v4.png`).first<{b64:string}>();
-   if(!firstRow?.b64)return Response.json({error:"첫 번째 그림부터 다시 만들어 줘."},{status:409});
+   // 2~5페이지: 프록시의 edit 기능이 배경을 전혀 바꾸지 못하므로 다시 generations로 전환. 
+   // 단, 배경과 구도가 완벽하게 바뀌도록 프롬프트 최상단에 Action과 Background를 강제로 배치.
+   const dynamicPrompt=`[NEW SCENE & ACTION - CRITICAL]:\n* ${sceneRules[page]}\n* ${target.text}\n* ${target.image_prompt}\n* Environment: ${genreEnvGuide}\n* DRASTICALLY change the background, camera angle, and character poses to match the story text! It MUST look like a completely different scene from page 1.\n\n[Masterpiece 3D CGI Storybook - Genre: ${story.genre}]\n${characterCountRule}\n\n[Characters (Keep identity consistent)]:\n${charAppearanceText}\n- Mascot: ${phodongIncluded?PHODONG:noPhodong}\n\n[Rendering & Art Style]:\n${STYLE}\n${STYLE_PRESERVE_INSTRUCTION}`;
 
-   const bin=atob(firstRow.b64);
-   const refU8=new Uint8Array(bin.length);
-   for(let i=0;i<bin.length;i++){refU8[i]=bin.charCodeAt(i);}
-
-   const editPrompt=`${basePrompt}[Dynamic Scene Change - Page ${page+1}/5 - Genre: ${story.genre}]\n\n* Look at the attached Page 1 reference image carefully. Every child (${story.child_name}) MUST keep their EXACT SAME face, gender, haircut, hair color, and outfit (outfit type and color) as established in the Page 1 reference image. Exactly ${humanCount} child character(s) and ${phodongIncluded?"one Phodong bear":"no bear"}.\n* ${STYLE_PRESERVE_INSTRUCTION}\n\n[New Scene in ${story.genre} World]:\n${target.text}\n${target.image_prompt}\n* ${genreEnvGuide}\n\n[Action & Camera]:\n${sceneRules[page]}. DRASTICALLY CHANGE the background, pose, expression, and camera angle to perfectly match the story text! Make it look like a completely different scene in the same world.`;
-
-   const form=new FormData();
-   form.append("model","gpt-image-2");
-   form.append("prompt",editPrompt.substring(0,4000));
-   form.append("size","1024x1024");
-   form.append("quality","medium");
-   form.append("image",new Blob([refU8.buffer],{type:"image/png"}),"reference-character.png");
-
-   response=await fetch("https://api.openai.com/v1/images/edits",{
+   response=await fetch("https://api.openai.com/v1/images/generations",{
     method:"POST",
-    headers:{Authorization:`Bearer ${openAIKey()}`},
-    body:form
+    headers:{Authorization:`Bearer ${openAIKey()}`,"Content-Type":"application/json"},
+    body:JSON.stringify({model:"gpt-image-2",prompt:dynamicPrompt.substring(0, 4000),size:"1024x1024",quality:"medium"})
    });
   }
 
