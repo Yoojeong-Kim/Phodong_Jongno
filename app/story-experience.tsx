@@ -37,31 +37,34 @@ export function ReaderBook({story,onSave,onDecorate,isFromGallery,initialItems}:
  if (page === story.pages.length) {
    return <section className="screen story reader">
     <div className={`book back-cover-mode ${turning?`turn-${turning}`:""}`} onTouchStart={e=>touch.current=e.touches[0].clientX} onTouchEnd={e=>{const d=e.changedTouches[0].clientX-touch.current;if(Math.abs(d)>55)turn(page+(d>0?-1:1))}}>
-     <div className="cover-visual" style={{height:"100%",position:"relative"}}>
-      {story.pages[story.pages.length-1]?.image_url?<img src={story.pages[story.pages.length-1].image_url} style={{width:"100%",height:"100%",objectFit:"cover"}} alt="뒷표지 배경"/>:<div className="image-wait">배경을 불러오고 있어</div>}
-      <div className="cover-overlay" style={{background:"rgba(0,0,0,0.6)",justifyContent:"space-between",padding:"40px 20px"}}>
-       
-       <div style={{marginTop:"auto",display:"flex",flexDirection:"column",alignItems:"center",gap:"16px",width:"100%"}}>
-        <h2 style={{fontSize:"clamp(24px, 4vw, 36px)",color:"#fff",margin:0}}>포동이와 함께한 모험, 어땠어?</h2>
-        <p style={{fontSize:"18px",color:"#eee",margin:0,wordBreak:"keep-all"}}>우리가 고른 <strong>{story.genre}</strong> 세상에서 멋진 일들이 있었지!</p>
-        
+     <div className="back-cover-grid">
+      {/* 왼쪽: 마지막 페이지 이미지 전체 화면 */}
+      <div className="back-left">
+       {story.pages[story.pages.length-1]?.image_url?<img src={story.pages[story.pages.length-1].image_url} style={{width:"100%",height:"100%",objectFit:"cover"}} alt="뒷표지 배경"/>:<div className="image-wait">배경을 불러오고 있어</div>}
+      </div>
+      {/* 오른쪽: 물건 정보 + 버튼 */}
+      <div className="back-right">
+       <div className="back-right-inner">
+        <h2 className="back-title">포동이와 함께한<br/>모험, 어땠어?</h2>
+        <p className="back-genre">우리가 고른 <strong>{story.genre}</strong> 세상에서<br/>멋진 일들이 있었지!</p>
         {initialItems && initialItems.length > 0 && initialItems.some(v=>v.photo) && (
-          <div className="back-cover-items" style={{display:"flex",gap:"16px",flexWrap:"wrap",justifyContent:"center",marginTop:"16px",width:"100%"}}>
+          <div className="back-polaroids">
             {initialItems.filter(v=>v.photo).map((item,i) => (
-              <div key={i} className="back-cover-item" style={{background:"rgba(255,255,255,0.15)",backdropFilter:"blur(12px)",padding:"12px",borderRadius:"20px",border:"1px solid rgba(255,255,255,0.3)",maxWidth:"240px",width:"100%"}}>
-                {item.photo && <img src={item.photo} style={{width:"100%",height:"160px",objectFit:"cover",borderRadius:"12px",marginBottom:"10px"}} alt="소중한 물건"/>}
-                <h3 style={{fontSize:"17px",margin:"0 0 6px",color:"#fff"}}>{item.name}</h3>
-                <p style={{fontSize:"14px",color:"#ddd",margin:0,lineHeight:"1.4"}}>{item.reason}</p>
-              </div>
+              <figure key={i} className="polaroid">
+                <img src={item.photo} alt="소중한 물건"/>
+                <figcaption>
+                  <strong>{item.name}</strong>
+                  {item.reason && <span>{item.reason}</span>}
+                </figcaption>
+              </figure>
             ))}
           </div>
         )}
+        <nav className="back-nav">
+         <button onClick={()=>turn(page-1)}>← 이야기로</button>
+         {isFromGallery?(onDecorate?<button className="save-story" onClick={onDecorate}>🎨 꾸미러 가기</button>:<button className="save-story" onClick={onSave}>책장으로</button>):<button className="save-story" onClick={onSave}>동화 저장하기</button>}
+        </nav>
        </div>
-
-       <nav className="book-nav" style={{position:"static",marginTop:"auto",width:"100%",maxWidth:"450px",display:"flex",justifyContent:"space-between",background:"none"}}>
-        <button onClick={()=>turn(page-1)} style={{background:"rgba(255,255,255,0.2)",color:"#fff"}}>← 이야기로</button>
-        {isFromGallery?(onDecorate?<button className="save-story" onClick={onDecorate}>🎨 꾸미러 가기</button>:<button className="save-story" onClick={onSave}>책장으로</button>):<button className="save-story" onClick={onSave}>동화 저장하기</button>}
-       </nav>
       </div>
      </div>
     </div>
@@ -139,12 +142,29 @@ const styles=`
 .sticker-tools{position:sticky;z-index:20;bottom:12px;margin:8px auto 0;width:max-content;display:flex;gap:6px;background:#3d2940e8;padding:7px;border-radius:99px}
 .sticker-tools button{border:0;background:#fff;border-radius:99px;padding:8px 13px}
 .sticker-ghost{position:fixed;z-index:100;width:120px;max-height:150px;object-fit:contain;transform:translate(-50%,-50%);pointer-events:none}
+.back-cover-grid{display:grid;grid-template-columns:1fr 1fr;height:100%;width:100%}
+.back-left{position:relative;overflow:hidden}
+.back-left img{width:100%;height:100%;object-fit:cover;display:block}
+.back-right{background:linear-gradient(160deg,#fff7fa,#ffe8f0);display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:24px}
+.back-right-inner{display:flex;flex-direction:column;align-items:center;gap:18px;width:100%;max-width:340px;text-align:center}
+.back-title{font-size:clamp(20px,2.6vw,28px);font-weight:800;color:#3d2940;margin:0;line-height:1.3}
+.back-genre{font-size:clamp(14px,1.5vw,17px);color:#8d5f70;margin:0;line-height:1.5}
+.back-polaroids{display:flex;flex-direction:column;gap:14px;width:100%}
+.polaroid{margin:0;background:#fff;padding:10px 10px 14px;border-radius:16px;box-shadow:0 8px 24px rgba(120,60,80,0.15);transform:rotate(-1.2deg);transition:transform .2s}
+.polaroid:nth-child(even){transform:rotate(1deg)}
+.polaroid:hover{transform:rotate(0) scale(1.02)}
+.polaroid img{width:100%;height:clamp(100px,14vw,160px);object-fit:cover;border-radius:8px;display:block;margin-bottom:8px}
+.polaroid figcaption{display:flex;flex-direction:column;gap:4px}
+.polaroid figcaption strong{font-size:clamp(14px,1.4vw,16px);color:#3d2940}
+.polaroid figcaption span{font-size:clamp(12px,1.1vw,14px);color:#8d6874;line-height:1.4}
+.back-nav{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:4px}
+.back-nav button{border:0;background:#f9e7ed;padding:10px 16px;border-radius:99px;font-size:14px;font-weight:600;color:#4d3442;cursor:pointer}
+.book.back-cover-mode::after{content:"";position:absolute;right:0;top:0;bottom:0;width:34px;background:linear-gradient(to left,rgba(0,0,0,0.25) 0%,rgba(0,0,0,0.05) 30%,rgba(255,255,255,0.15) 50%,transparent 100%);z-index:10;pointer-events:none}
+.book.cover-mode::after{content:"";position:absolute;left:0;top:0;bottom:0;width:34px;background:linear-gradient(to right,rgba(0,0,0,0.3) 0%,rgba(0,0,0,0.05) 30%,rgba(255,255,255,0.15) 50%,transparent 100%);z-index:10;pointer-events:none}
 .cover-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.35);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-shadow:0 4px 12px rgba(0,0,0,0.5)}
 .cover-overlay h1{font-size:clamp(36px,5vw,60px);font-weight:900;margin-bottom:24px;text-align:center;word-break:keep-all;padding:0 20px;line-height:1.2}
 .pulse-text{font-size:clamp(16px,2vw,22px);font-weight:700;animation:pulse 2s infinite;background:rgba(255,255,255,0.2);padding:10px 24px;border-radius:99px;backdrop-filter:blur(4px)}
 @keyframes pulse{0%{transform:scale(1);opacity:0.8}50%{transform:scale(1.05);opacity:1}100%{transform:scale(1);opacity:0.8}}
-.book.cover-mode::after{content:"";position:absolute;left:0;top:0;bottom:0;width:34px;background:linear-gradient(to right,rgba(0,0,0,0.3) 0%,rgba(0,0,0,0.05) 30%,rgba(255,255,255,0.15) 50%,transparent 100%);z-index:10;pointer-events:none}
-.book.back-cover-mode::after{content:"";position:absolute;right:0;top:0;bottom:0;width:34px;background:linear-gradient(to left,rgba(0,0,0,0.25) 0%,rgba(0,0,0,0.05) 30%,rgba(255,255,255,0.15) 50%,transparent 100%);z-index:10;pointer-events:none}
 .book{perspective:2000px}
 .turn-next{animation:pageFlipNext 0.45s cubic-bezier(0.3, 0.8, 0.5, 1)}
 .turn-prev{animation:pageFlipPrev 0.45s cubic-bezier(0.3, 0.8, 0.5, 1)}
@@ -153,6 +173,9 @@ const styles=`
 @media(max-width:850px){
  .reader .book{grid-template-columns:1fr;grid-template-rows:44% 56%;height:calc(100svh - 220px);min-height:480px}
  .reader .book.cover-mode, .reader .book.back-cover-mode{grid-template-rows:100%}
+ .back-cover-grid{grid-template-columns:1fr;grid-template-rows:50% 50%}
+ .back-right{padding:16px}
+ .polaroid img{height:80px}
  .book-nav{left:16px;right:16px;bottom:14px}
  .reader .book article{padding:16px 20px 60px}
  .reader .book article h2{font-size:22px;margin:4px 0 8px}
