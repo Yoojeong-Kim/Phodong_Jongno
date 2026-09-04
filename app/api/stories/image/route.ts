@@ -76,7 +76,7 @@ Absolute Constraints & Negative Rules: Absolutely NO muddy, dull, murky, greyish
    response=await fetch("https://api.openai.com/v1/images/generations",{
     method:"POST",
     headers:{Authorization:`Bearer ${openAIKey()}`,"Content-Type":"application/json"},
-    body:JSON.stringify({model:"dall-e-3",prompt:anchorPrompt.substring(0, 4000),size:"1024x1024",quality:"hd",response_format:"b64_json"})
+    body:JSON.stringify({model:"dall-e-3",prompt:anchorPrompt.substring(0, 4000),size:"1024x1024",quality:"hd"})
    });
   } else {
    // 2~5페이지: 텍스트 프롬프트를 통해 인물과 화풍 고정
@@ -85,12 +85,24 @@ Absolute Constraints & Negative Rules: Absolutely NO muddy, dull, murky, greyish
    response=await fetch("https://api.openai.com/v1/images/generations",{
     method:"POST",
     headers:{Authorization:`Bearer ${openAIKey()}`,"Content-Type":"application/json"},
-    body:JSON.stringify({model:"dall-e-3",prompt:editPrompt.substring(0, 4000),size:"1024x1024",quality:"hd",response_format:"b64_json"})
+    body:JSON.stringify({model:"dall-e-3",prompt:editPrompt.substring(0, 4000),size:"1024x1024",quality:"hd"})
    });
   }
 
   if(!response.ok){const detail=await response.text();console.error("image_api",response.status,detail.slice(0,500));throw new Error(`이미지 API 오류 ${response.status}`)}
-  const data=await response.json() as any,b64=data.data?.[0]?.b64_json;if(!b64)throw new Error("이미지 데이터 없음");
+  const data=await response.json() as any;
+  let b64 = data.data?.[0]?.b64_json;
+  if(!b64 && data.data?.[0]?.url){
+      const res=await fetch(data.data[0].url);
+      if(res.ok){
+          const buf=await res.arrayBuffer();
+          let binary='';
+          const bytes=new Uint8Array(buf);
+          for(let i=0;i<bytes.byteLength;i++){binary+=String.fromCharCode(bytes[i]);}
+          b64=btoa(binary);
+      }
+  }
+  if(!b64)throw new Error("이미지 데이터 없음");
   await env.DB.prepare("INSERT INTO story_images (key,b64,created_at) VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET b64=excluded.b64").bind(key,b64,Date.now()).run();
   target.image_url=`/api/story-images/${id}/page-${page+1}-style-v4.png`;
   const complete=story.pages.every(p=>p.image_url?.includes("style-v4"));
