@@ -31,11 +31,15 @@ export async function POST(req:Request){
   const PHODONG="포동이 외형: 포동이는 통통하고 포근한 꿀베이지색 봉제인형 곰돌이 캐릭터. 복슬복슬한 털 질감, 둥글둥글한 귀, 작고 까만 단추 눈과 코, 발그레한 살구빛 볼, 손발바닥의 핑크 젤리 패드. 포근한 아이보리 꽈배기 니트 스웨터와 사랑스러운 코랄 핑크 스카프를 매고 있음.";
   const noPhodong="포동이 및 곰·테디베어 캐릭터는 일체 등장시키지 말 것.";
 
+  const humanNames = story.child_name.split(" · ");
+  const humanCount = humanNames.length;
+  const characterCountRule = `[Strict Character Count - CRITICAL]:\n* Exactly ${humanCount} human child character(s) (${story.child_name}) must appear in this image. Absolutely NO duplicate clones, NO extra children, NO background humans, and NO twins. There is only ONE ${story.child_name} in the scene.`;
+
   let response: Response;
 
   if(page === 0){
    // 1페이지: 전체 동화의 화풍과 캐릭터(주인공 + 포동이)를 결정짓는 핵심 앵커 생성
-   const anchorPrompt=`[3D Storybook Masterpiece Illustration - Opening Scene - Genre: ${story.genre}]\n\n[Scene 1 Story]:\n${target.text}\n\n[Visual Details & Key Subjects]:\n${target.image_prompt}\n\n[Camera & Atmosphere]:\n${sceneRules[0]}. 방 안에서 소중한 물건 '${story.object_name}'(색상, 형태, 질감 정밀 묘사)이 신비롭게 빛나며 마법의 문이 열리는 따스한 장면.\n\n[Character Continuity Base]:\n${phodongIncluded?PHODONG:noPhodong}\n주인공 아이와 포동이의 사랑스럽고 포근한 니트 착장과 귀여운 표정.\n\n[Rendering & Art Style]:\n${STYLE}`;
+   const anchorPrompt=`[3D Storybook Masterpiece Illustration - Opening Scene - Genre: ${story.genre}]\n\n${characterCountRule}\n\n[Scene 1 Story]:\n${target.text}\n\n[Visual Details & Key Subjects]:\n${target.image_prompt}\n\n[Camera & Atmosphere]:\n${sceneRules[0]}. 방 안에서 소중한 물건 '${story.object_name}'(색상, 형태, 질감 정밀 묘사)이 신비롭게 빛나며 마법의 문이 열리는 따스한 장면. 장르 '${story.genre}'를 암시하는 신비로운 마법 빛무리와 방 안의 귀여운 소품들.\n\n[Character Continuity Base]:\n${phodongIncluded?PHODONG:noPhodong}\n주인공 아이(${story.child_name})와 포동이의 사랑스럽고 포근한 니트 착장과 귀여운 표정.\n\n[Rendering & Art Style]:\n${STYLE}`;
 
    response=await fetch("https://api.openai.com/v1/images/generations",{
     method:"POST",
@@ -51,7 +55,7 @@ export async function POST(req:Request){
    const refU8=new Uint8Array(bin.length);
    for(let i=0;i<bin.length;i++){refU8[i]=bin.charCodeAt(i);}
 
-   const editPrompt=`[3D Storybook Continuation Scene ${page+1}/5 - Genre: ${story.genre}]\n\n[Strict Character Identity Lock]:\nAttached image is Page 1 reference. Maintain the exact same 3D character design: the child's facial features, haircut, hair color, eyes, and cozy knitted clothes, as well as the exact same Phodong plush teddy bear character design (soft beige fur, cream sweater, pink scarf). Do not change their faces or character models.\n\n[New Scene & Action in ${story.genre} World]:\n${target.text}\n${target.image_prompt}\n* Transform the environment completely into the vivid ${story.genre} universe! (e.g. For dinosaur genre, feature cute friendly 3D baby dinosaurs, lush ancient foliage, giant prehistoric plants, and dinosaur eggs).\n\n[Dynamic Scene & Composition]:\n${sceneRules[page]}. Dynamic action, expressive gestures interacting with the ${story.genre} elements and precious object '${story.object_name}'.\n\n[Style Consistency]:\n${STYLE}`;
+   const editPrompt=`[3D Storybook Continuation Scene ${page+1}/5 - Genre: ${story.genre}]\n\n${characterCountRule}\n\n[Strict Character Identity & Appearance Lock]:\nAttached image is Page 1 reference. Keep the EXACT SAME single child character (${story.child_name}): same face, hair, and character model. Do NOT clone the child. Do NOT add a second child. Exactly one child (${story.child_name}) and ${phodongIncluded?"one Phodong teddy bear":"no bears"}.\n\n[Full Genre Transformation - ${story.genre} World]:\n${target.text}\n${target.image_prompt}\n* Vividly depict the authentic '${story.genre}' world in rich detail! Fill the environment with charming genre-specific landscape, props, and companions (e.g. for Dinosaurs: adorable baby Triceratops/Brachiosaurus, gigantic prehistoric flora, glowing dino eggs, jungle vines, and cute adventure gear like explorer belts or magnifying tools).\n\n[Dynamic Scene & Action]:\n${sceneRules[page]}. Natural, lively interaction between ${story.child_name}, ${phodongIncluded?"Phodong, ":""}the precious object '${story.object_name}', and the ${story.genre} surroundings.\n\n[Style Consistency]:\n${STYLE}`;
 
    const form=new FormData();
    form.append("model","gpt-image-1");
