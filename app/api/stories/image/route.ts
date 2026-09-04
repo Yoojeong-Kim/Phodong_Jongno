@@ -37,7 +37,7 @@ export async function POST(req:Request){
    referenceBytes=refU8.buffer;
   }
   else{const style=await fetch(new URL("/story-style-reference-v1.png",req.url));if(!style.ok)throw new Error("스타일 기준 이미지를 찾지 못했어.");referenceBytes=await style.arrayBuffer()}
-  const form=new FormData();form.append("model","gpt-image-2");form.append("prompt",prompt);form.append("size","1024x1024");form.append("quality","medium");form.append("output_format","png");form.append("image",new Blob([referenceBytes],{type:"image/png"}),page===0?"fixed-style-reference.png":"page-one-character-reference.png");
+  const form=new FormData();form.append("model","gpt-image-1");form.append("prompt",prompt);form.append("size","1024x1024");form.append("quality","medium");form.append("output_format","png");form.append("image",new Blob([referenceBytes],{type:"image/png"}),page===0?"fixed-style-reference.png":"page-one-character-reference.png");
   const response=await fetch("https://api.openai.com/v1/images/edits",{method:"POST",headers:{Authorization:`Bearer ${openAIKey()}`},body:form});
   if(!response.ok){const detail=await response.text();console.error("image_api",response.status,detail.slice(0,500));throw new Error(`이미지 API 오류 ${response.status}`)}
   const data=await response.json() as any,b64=data.data?.[0]?.b64_json;if(!b64)throw new Error("이미지 데이터 없음");
@@ -46,6 +46,6 @@ export async function POST(req:Request){
   const complete=story.pages.every(p=>p.image_url?.includes("style-v2"));
   await env.DB.prepare("UPDATE stories SET pages_json=?, status=? WHERE id=?").bind(JSON.stringify(story.pages),complete?"complete":"generating",id).run();
   return Response.json({image_url:target.image_url,complete});
- }catch(e){console.error(e);return Response.json({error:"삽화를 만드는 데 실패했어."},{status:500})}
+ }catch(e){console.error("image_gen_failed",e instanceof Error?e.message:String(e));return Response.json({error:"삽화를 만드는 데 실패했어."},{status:500})}
  finally{try{if(slotAcquired&&lockId&&Number.isInteger(lockPage))await env.DB.prepare("UPDATE image_slots SET story_id=NULL,page=NULL,locked_until=0 WHERE story_id=? AND page=?").bind(lockId,lockPage).run()}catch{}}
 }
