@@ -76,16 +76,30 @@ Absolute Constraints & Negative Rules: Absolutely NO muddy, dull, murky, greyish
    response=await fetch("https://api.openai.com/v1/images/generations",{
     method:"POST",
     headers:{Authorization:`Bearer ${openAIKey()}`,"Content-Type":"application/json"},
-    body:JSON.stringify({model:"gpt-image-2",prompt:anchorPrompt.substring(0, 4000),size:"1024x1024",quality:"high"})
+    body:JSON.stringify({model:"gpt-image-2",prompt:anchorPrompt.substring(0, 4000),size:"1024x1024",quality:"medium"})
    });
   } else {
-   // 2~5페이지: 텍스트 프롬프트를 통해 인물과 화풍 고정
-   const editPrompt=`${basePrompt}[Strict Character & Style Continuity]:\n* Every child (${story.child_name}) MUST keep their EXACT SAME face, gender, haircut, hair color, and outfit (outfit type and color) as established in previous pages. Exactly ${humanCount} child character(s) and ${phodongIncluded?"one Phodong bear":"no bear"}.\n* ${STYLE_PRESERVE_INSTRUCTION}\n\n[New Scene in ${story.genre} World]:\n${target.text}\n${target.image_prompt}\n* ${genreEnvGuide}\n\n[Action & Camera]:\n${sceneRules[page]}. Dynamic lively interactions.`;
+   // 2~5페이지: 1페이지 이미지를 edit하여 배경/구도를 확확 바꾸면서 캐릭터만 유지
+   const firstRow=await env.DB.prepare("SELECT b64 FROM story_images WHERE key=?").bind(`stories/${id}/page-1-style-v4.png`).first<{b64:string}>();
+   if(!firstRow?.b64)return Response.json({error:"첫 번째 그림부터 다시 만들어 줘."},{status:409});
 
-   response=await fetch("https://api.openai.com/v1/images/generations",{
+   const bin=atob(firstRow.b64);
+   const refU8=new Uint8Array(bin.length);
+   for(let i=0;i<bin.length;i++){refU8[i]=bin.charCodeAt(i);}
+
+   const editPrompt=`${basePrompt}[Dynamic Scene Change - Page ${page+1}/5 - Genre: ${story.genre}]\n\n* Look at the attached Page 1 reference image carefully. Every child (${story.child_name}) MUST keep their EXACT SAME face, gender, haircut, hair color, and outfit (outfit type and color) as established in the Page 1 reference image. Exactly ${humanCount} child character(s) and ${phodongIncluded?"one Phodong bear":"no bear"}.\n* ${STYLE_PRESERVE_INSTRUCTION}\n\n[New Scene in ${story.genre} World]:\n${target.text}\n${target.image_prompt}\n* ${genreEnvGuide}\n\n[Action & Camera]:\n${sceneRules[page]}. DRASTICALLY CHANGE the background, pose, expression, and camera angle to perfectly match the story text! Make it look like a completely different scene in the same world.`;
+
+   const form=new FormData();
+   form.append("model","gpt-image-2");
+   form.append("prompt",editPrompt.substring(0,4000));
+   form.append("size","1024x1024");
+   form.append("quality","medium");
+   form.append("image",new Blob([refU8.buffer],{type:"image/png"}),"reference-character.png");
+
+   response=await fetch("https://api.openai.com/v1/images/edits",{
     method:"POST",
-    headers:{Authorization:`Bearer ${openAIKey()}`,"Content-Type":"application/json"},
-    body:JSON.stringify({model:"gpt-image-2",prompt:editPrompt.substring(0, 4000),size:"1024x1024",quality:"high"})
+    headers:{Authorization:`Bearer ${openAIKey()}`},
+    body:form
    });
   }
 
