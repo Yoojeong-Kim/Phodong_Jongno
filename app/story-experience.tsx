@@ -37,26 +37,32 @@ export function ReaderBook({story,onSave,onDecorate,isFromGallery,initialItems}:
  if (page === story.pages.length) {
    return <section className="screen story reader">
     <div className={`book back-cover-mode ${turning?`turn-${turning}`:""}`} onTouchStart={e=>touch.current=e.touches[0].clientX} onTouchEnd={e=>{const d=e.changedTouches[0].clientX-touch.current;if(Math.abs(d)>55)turn(page+(d>0?-1:1))}}>
-     <div className="back-cover" style={{width:"100%",height:"100%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"40px",textAlign:"center",background:"linear-gradient(145deg, #fff0f5, #ffe2ec)",overflowY:"auto"}}>
-      <h2 style={{fontSize:"clamp(24px, 4vw, 36px)",color:"#cf3468",marginBottom:"12px"}}>포동이와 함께한 모험, 어땠어?</h2>
-      <p style={{fontSize:"18px",color:"#684d59",marginBottom:"32px",wordBreak:"keep-all"}}>우리가 고른 <strong>{story.genre}</strong> 세상에서 멋진 일들이 있었지!</p>
-      
-      {initialItems && initialItems.length > 0 && initialItems.some(v=>v.photo) && (
-        <div className="back-cover-items" style={{display:"flex",gap:"16px",flexWrap:"wrap",justifyContent:"center",marginBottom:"40px",width:"100%"}}>
-          {initialItems.filter(v=>v.photo).map((item,i) => (
-            <div key={i} className="back-cover-item" style={{background:"#fff",padding:"12px",borderRadius:"20px",boxShadow:"0 12px 32px rgba(207,52,104,0.12)",maxWidth:"260px",width:"100%"}}>
-              {item.photo && <img src={item.photo} style={{width:"100%",height:"180px",objectFit:"cover",borderRadius:"12px",marginBottom:"12px"}} alt="소중한 물건"/>}
-              <h3 style={{fontSize:"18px",margin:"0 0 6px",color:"#3d2940"}}>{item.name}</h3>
-              <p style={{fontSize:"14px",color:"#7a636f",margin:0,lineHeight:"1.5"}}>{item.reason}</p>
-            </div>
-          ))}
-        </div>
-      )}
+     <div className="cover-visual" style={{height:"100%",position:"relative"}}>
+      {story.pages[story.pages.length-1]?.image_url?<img src={story.pages[story.pages.length-1].image_url} style={{width:"100%",height:"100%",objectFit:"cover"}} alt="뒷표지 배경"/>:<div className="image-wait">배경을 불러오고 있어</div>}
+      <div className="cover-overlay" style={{background:"rgba(0,0,0,0.6)",justifyContent:"space-between",padding:"40px 20px"}}>
+       
+       <div style={{marginTop:"auto",display:"flex",flexDirection:"column",alignItems:"center",gap:"16px",width:"100%"}}>
+        <h2 style={{fontSize:"clamp(24px, 4vw, 36px)",color:"#fff",margin:0}}>포동이와 함께한 모험, 어땠어?</h2>
+        <p style={{fontSize:"18px",color:"#eee",margin:0,wordBreak:"keep-all"}}>우리가 고른 <strong>{story.genre}</strong> 세상에서 멋진 일들이 있었지!</p>
+        
+        {initialItems && initialItems.length > 0 && initialItems.some(v=>v.photo) && (
+          <div className="back-cover-items" style={{display:"flex",gap:"16px",flexWrap:"wrap",justifyContent:"center",marginTop:"16px",width:"100%"}}>
+            {initialItems.filter(v=>v.photo).map((item,i) => (
+              <div key={i} className="back-cover-item" style={{background:"rgba(255,255,255,0.15)",backdropFilter:"blur(12px)",padding:"12px",borderRadius:"20px",border:"1px solid rgba(255,255,255,0.3)",maxWidth:"240px",width:"100%"}}>
+                {item.photo && <img src={item.photo} style={{width:"100%",height:"160px",objectFit:"cover",borderRadius:"12px",marginBottom:"10px"}} alt="소중한 물건"/>}
+                <h3 style={{fontSize:"17px",margin:"0 0 6px",color:"#fff"}}>{item.name}</h3>
+                <p style={{fontSize:"14px",color:"#ddd",margin:0,lineHeight:"1.4"}}>{item.reason}</p>
+              </div>
+            ))}
+          </div>
+        )}
+       </div>
 
-      <nav className="book-nav" style={{position:"static",marginTop:"auto",width:"100%",maxWidth:"450px",display:"flex",justifyContent:"space-between",background:"none"}}>
-       <button onClick={()=>turn(page-1)}>← 이야기로</button>
-       {isFromGallery?(onDecorate?<button className="save-story" onClick={onDecorate}>🎨 꾸미러 가기</button>:<button className="save-story" onClick={onSave}>책장으로</button>):<button className="save-story" onClick={onSave}>동화 저장하기</button>}
-      </nav>
+       <nav className="book-nav" style={{position:"static",marginTop:"auto",width:"100%",maxWidth:"450px",display:"flex",justifyContent:"space-between",background:"none"}}>
+        <button onClick={()=>turn(page-1)} style={{background:"rgba(255,255,255,0.2)",color:"#fff"}}>← 이야기로</button>
+        {isFromGallery?(onDecorate?<button className="save-story" onClick={onDecorate}>🎨 꾸미러 가기</button>:<button className="save-story" onClick={onSave}>책장으로</button>):<button className="save-story" onClick={onSave}>동화 저장하기</button>}
+       </nav>
+      </div>
      </div>
     </div>
     <style>{styles}</style>
