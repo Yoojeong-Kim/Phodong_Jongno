@@ -40,7 +40,8 @@ export function storyInput(v:{characters:{name:string;appearance:string}[];objec
 소중한 물건:
 ${objects}
 선택 장르: ${v.genre}
-포동이 동행 여부: ${v.includePhodong?"함께 등장 — 다정하고 귀여운 조력자":"등장하지 않음 — 이야기와 그림에서 곰, 곰돌이, 포동이 캐릭터 일체 제외"}
+포동이 동행 여부: ${v.includePhodong?`함께 등장 — 다정하고 귀여운 조력자로 매 페이지 이야기와 삽화 모두에 등장한다.
+포동이 외형(image_prompt에 반드시 반영): 통통하고 복슬복슬한 복숭아 베이지색 곰돌이. 분홍 발바닥, 분홍 볼터치, 반짝이는 검은 구슬 눈, 작고 귀여운 코. 크림색 니트 스웨터, 분홍·살몬 나비매듭 스카프.`:"등장하지 않음 — 이야기와 그림에서 곰, 곰돌이, 포동이 캐릭터 일체 제외"}
 
 [삽화 그리기용 캐릭터 외형 정보 - 본문 글에는 쓰지 말고 image_prompt에만 사용]:
 ${charAppearances}
