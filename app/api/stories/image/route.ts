@@ -47,9 +47,19 @@ Absolute Constraints & Negative Rules: Absolutely NO muddy, dull, murky, greyish
   const PHODONG = `포동이 외형: 포동이는 통통하고 포근한 꿀베이지색 봉제인형 곰돌이 캐릭터. 극도로 부드러운 프리미엄 플러시 토이 텍스처(벨벳 같은 미세 털 섬유 질감, 따뜻한 빛 아래 은은한 마이크로파이버 반사), 둥글둥글하고 깜찍한 귀, 맑고 반짝이는 까만 단추 눈과 코, 발그레한 살구빛 볼과 손발바닥의 핑크 젤리 패드. 포근한 아이보리 꽈배기 니트 스웨터와 사랑스러운 빨간/코랄 나비 스카프. 크고 둥근 머리와 작고 통통한 몸매.`;
   const noPhodong = "포동이 및 곰·테디베어 캐릭터는 일체 등장시키지 말 것.";
 
+  const genreEnvironments: Record<string, string> = {
+    "공룡": "Rich, immersive dinosaur adventure setting with friendly, cute 3D dinosaurs, lush ancient prehistoric flora, clear waterfalls, and warm sunlit jungle pathways.",
+    "요정": "Enchanted fairy forest setting with glowing whimsical mushroom houses, sparkling fairy dust, giant colorful blooming flowers, and magical soft morning light.",
+    "공주와 왕자": "Magical royal kingdom setting with whimsical pastel fairytale castle towers, golden palace gardens, royal marble arches, and elegant storybook courtyards.",
+    "동물": "Vibrant safari animal sanctuary setting with friendly cheerful animals, sun-dappled savanna meadows, acacia trees, and playful nature landscapes.",
+    "우주": "Whimsical colorful space wonderland with friendly cartoon planets, twinkling spiral galaxies, floating crystal asteroids, and cute space explorer elements.",
+    "전래동화": "Charming traditional Korean fairytale folk village setting with cozy hanok tiled roofs, stone pathways, persimmon trees, and soft paper-lantern glow."
+  };
+  const genreEnvGuide = genreEnvironments[story.genre] || `Rich, immersive '${story.genre}' storybook environment.`;
+
   const humanNames = story.child_name.split(" · ");
   const humanCount = humanNames.length;
-  const characterCountRule = `[Strict Character Count & Identity Lock - CRITICAL]:\n* Exactly ${humanCount} human child character(s) (${story.child_name}) must appear in this image. Absolutely NO duplicate clones, NO extra children, NO background humans, and NO twins. There is only ONE child (${story.child_name}).\n* CRITICAL: Strictly preserve the child's gender, hairstyle, hair color, and chosen outfit across all pages!`;
+  const characterCountRule = `[Strict Character Count & Identity Lock - CRITICAL]:\n* Exactly ${humanCount} distinct human child character(s) (${story.child_name}) must appear in this image.\n* Absolutely NO duplicate clones, NO extra children, NO background humans, and NO twins. Each child must be distinct. Total human children in the scene must be EXACTLY ${humanCount}.\n* CRITICAL: Strictly preserve each child's gender, hairstyle, hair color, and chosen outfit across all pages!`;
 
   const charAppearanceText = story.characters && story.characters.length > 0
     ? story.characters.map(c => `- Human Child (${c.name}): ${c.appearance}`).join("\n")
@@ -75,7 +85,7 @@ Absolute Constraints & Negative Rules: Absolutely NO muddy, dull, murky, greyish
    const refU8=new Uint8Array(bin.length);
    for(let i=0;i<bin.length;i++){refU8[i]=bin.charCodeAt(i);}
 
-   const editPrompt=`[3D CGI Storybook Continuation - Page ${page+1}/5 - Genre: ${story.genre}]\n\n${characterCountRule}\n\n[Character & Style Continuity from Reference Image]:\n* Look at the attached Page 1 reference image carefully. The child ${story.child_name} MUST keep the EXACT SAME face, exact same gender, same haircut, same hair color, and same outfit (outfit type and color) as established in the Page 1 reference image. Do NOT change gender, hairstyle, or clothing! Exactly ${humanCount} child character(s) and ${phodongIncluded?"one Phodong bear":"no bear"}.\n* ${STYLE_PRESERVE_INSTRUCTION}\n\n[New Scene in ${story.genre} World]:\n${target.text}\n${target.image_prompt}\n* Rich, immersive '${story.genre}' environment (e.g. friendly 3D dinosaurs, ancient jungle flora, dinosaur eggs, and cute adventurer accessories).\n\n[Action & Camera]:\n${sceneRules[page]}. Dynamic lively interactions.\n\n[Art Style]:\n${STYLE}`;
+   const editPrompt=`[3D CGI Storybook Continuation - Page ${page+1}/5 - Genre: ${story.genre}]\n\n${characterCountRule}\n\n[Character & Style Continuity from Reference Image]:\n* Look at the attached Page 1 reference image carefully. Every child (${story.child_name}) MUST keep their EXACT SAME face, gender, haircut, hair color, and outfit (outfit type and color) as established in the Page 1 reference image. Do NOT change gender, hairstyle, or clothing! Exactly ${humanCount} child character(s) and ${phodongIncluded?"one Phodong bear":"no bear"}.\n* ${STYLE_PRESERVE_INSTRUCTION}\n\n[New Scene in ${story.genre} World]:\n${target.text}\n${target.image_prompt}\n* ${genreEnvGuide}\n\n[Action & Camera]:\n${sceneRules[page]}. Dynamic lively interactions.\n\n[Art Style]:\n${STYLE}`;
 
    const form=new FormData();
    form.append("model","gpt-image-1");
