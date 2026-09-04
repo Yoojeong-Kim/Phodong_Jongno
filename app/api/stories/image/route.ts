@@ -33,13 +33,13 @@ export async function POST(req:Request){
 
   const humanNames = story.child_name.split(" · ");
   const humanCount = humanNames.length;
-  const characterCountRule = `[Strict Character Count - CRITICAL]:\n* Exactly ${humanCount} human child character(s) (${story.child_name}) must appear in this image. Absolutely NO duplicate clones, NO extra children, NO background humans, and NO twins. There is only ONE ${story.child_name} in the scene.`;
+  const characterCountRule = `[Strict Character Count & Identity Lock - CRITICAL]:\n* Exactly ${humanCount} human child character(s) (${story.child_name}) must appear in this image. Absolutely NO duplicate clones, NO extra children, NO background humans, and NO twins. There is only ONE child (${story.child_name}).\n* CRITICAL: Do NOT change the child's gender, hairstyle, hair color, or clothing. The child's gender and identity must be 100% consistent across all pages!`;
 
   let response: Response;
 
   if(page === 0){
    // 1페이지: 전체 동화의 화풍과 캐릭터(주인공 + 포동이)를 결정짓는 핵심 앵커 생성
-   const anchorPrompt=`[3D Storybook Masterpiece Illustration - Opening Scene - Genre: ${story.genre}]\n\n${characterCountRule}\n\n[Scene 1 Story]:\n${target.text}\n\n[Visual Details & Key Subjects]:\n${target.image_prompt}\n\n[Camera & Atmosphere]:\n${sceneRules[0]}. 방 안에서 소중한 물건 '${story.object_name}'(색상, 형태, 질감 정밀 묘사)이 신비롭게 빛나며 마법의 문이 열리는 따스한 장면. 장르 '${story.genre}'를 암시하는 신비로운 마법 빛무리와 방 안의 귀여운 소품들.\n\n[Character Continuity Base]:\n${phodongIncluded?PHODONG:noPhodong}\n주인공 아이(${story.child_name})와 포동이의 사랑스럽고 포근한 니트 착장과 귀여운 표정.\n\n[Rendering & Art Style]:\n${STYLE}`;
+   const anchorPrompt=`[Masterpiece 3D CGI Storybook Illustration - Page 1 Anchor Scene - Genre: ${story.genre}]\n\n${characterCountRule}\n\n[Scene 1 Action & Environment]:\n${target.text}\n${target.image_prompt}\n* Indoor cozy bedroom setting where the precious object '${story.object_name}' glows with magical light.\n\n[Characters in Scene]:\n- Human Child: ${story.child_name}. Wearing cozy warm knitted sweater and pants. Joyful, wide starry eyes, cute rosy blushed cheeks.\n- Mascot: ${phodongIncluded?PHODONG:noPhodong}\n\n[Rendering & Art Style]:\n${STYLE}`;
 
    response=await fetch("https://api.openai.com/v1/images/generations",{
     method:"POST",
@@ -47,7 +47,7 @@ export async function POST(req:Request){
     body:JSON.stringify({model:"gpt-image-1",prompt:anchorPrompt,size:"1024x1024",quality:"high",output_format:"png"})
    });
   } else {
-   // 2~5페이지: 1페이지에서 확정된 주인공 아이와 포동이 캐릭터를 레퍼런스로 고정하고, 장르별 사건/배경으로 연속 전개
+   // 2~5페이지: 1페이지의 고화질 렌더링을 참조 이미지로 넘겨 인물과 화풍을 고정
    const firstRow=await env.DB.prepare("SELECT b64 FROM story_images WHERE key=?").bind(`stories/${id}/page-1-style-v2.png`).first<{b64:string}>();
    if(!firstRow?.b64)return Response.json({error:"첫 번째 그림부터 다시 만들어 줘."},{status:409});
 
@@ -55,7 +55,7 @@ export async function POST(req:Request){
    const refU8=new Uint8Array(bin.length);
    for(let i=0;i<bin.length;i++){refU8[i]=bin.charCodeAt(i);}
 
-   const editPrompt=`[3D Storybook Continuation Scene ${page+1}/5 - Genre: ${story.genre}]\n\n${characterCountRule}\n\n[Strict Character Identity & Appearance Lock]:\nAttached image is Page 1 reference. Keep the EXACT SAME single child character (${story.child_name}): same face, hair, and character model. Do NOT clone the child. Do NOT add a second child. Exactly one child (${story.child_name}) and ${phodongIncluded?"one Phodong teddy bear":"no bears"}.\n\n[Full Genre Transformation - ${story.genre} World]:\n${target.text}\n${target.image_prompt}\n* Vividly depict the authentic '${story.genre}' world in rich detail! Fill the environment with charming genre-specific landscape, props, and companions (e.g. for Dinosaurs: adorable baby Triceratops/Brachiosaurus, gigantic prehistoric flora, glowing dino eggs, jungle vines, and cute adventure gear like explorer belts or magnifying tools).\n\n[Dynamic Scene & Action]:\n${sceneRules[page]}. Natural, lively interaction between ${story.child_name}, ${phodongIncluded?"Phodong, ":""}the precious object '${story.object_name}', and the ${story.genre} surroundings.\n\n[Style Consistency]:\n${STYLE}`;
+   const editPrompt=`[3D CGI Storybook Continuation - Page ${page+1}/5 - Genre: ${story.genre}]\n\n${characterCountRule}\n\n[Character & Style Continuity from Reference Image]:\n* Look at the attached Page 1 reference image carefully. The child ${story.child_name} MUST keep the EXACT SAME face, exact same gender, same haircut, same hair color, and same cozy clothing texture. Do NOT swap gender or clothes! Exactly one child and ${phodongIncluded?"one Phodong bear":"no bear"}.\n* Maintain the exact same rendering style, warm peach pastel lighting, and soft clay/plush texture as Page 1.\n\n[New Scene in ${story.genre} World]:\n${target.text}\n${target.image_prompt}\n* Rich, immersive '${story.genre}' environment (e.g. friendly 3D dinosaurs, ancient jungle flora, dinosaur eggs, and cute adventurer accessories).\n\n[Action & Camera]:\n${sceneRules[page]}. Dynamic lively interactions.\n\n[Art Style]:\n${STYLE}`;
 
    const form=new FormData();
    form.append("model","gpt-image-1");
@@ -63,7 +63,7 @@ export async function POST(req:Request){
    form.append("size","1024x1024");
    form.append("quality","high");
    form.append("output_format","png");
-   form.append("image",new Blob([refU8.buffer],{type:"image/png"}),"page-1-character-reference.png");
+   form.append("image",new Blob([refU8.buffer],{type:"image/png"}),"reference-character.png");
 
    response=await fetch("https://api.openai.com/v1/images/edits",{
     method:"POST",
