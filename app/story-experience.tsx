@@ -20,7 +20,7 @@ export function ReaderBook({story,onSave,onDecorate,isFromGallery}:{story:StoryD
   <div className={`book ${turning?`turn-${turning}`:""}`} onTouchStart={e=>touch.current=e.touches[0].clientX} onTouchEnd={e=>{const d=e.changedTouches[0].clientX-touch.current;if(Math.abs(d)>55)turn(page+(d>0?-1:1))}}>
    {isFromGallery&&onDecorate&&<button className="gallery-decorate-badge" onClick={onDecorate}>🎨 이 동화 꾸미기</button>}
    <BookPage story={story} page={page}/>
-   <svg className="drawing-layer reader-drawings" viewBox="0 0 100 100" preserveAspectRatio="none" style={{pointerEvents:"none"}}>{pageStrokes.map(s=><polyline key={s.id} points={s.points.map(p=>`${p.x},${p.y}`).join(" ")} fill="none" stroke={s.color} strokeWidth={s.width/4.5} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>)}</svg>
+   <svg className="drawing-layer reader-drawings" viewBox="0 0 100 100" preserveAspectRatio="none" style={{pointerEvents:"none"}}>{pageStrokes.map(s=><polyline key={s.id} points={s.points.map(p=>`${p.x},${p.y}`).join(" ")} fill="none" stroke={s.color} strokeWidth={s.width/2} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>)}</svg>
    {pageStickers.map(s=><div key={s.id} className="placed-sticker" style={{left:`${s.x}%`,top:`${s.y}%`,width:s.size,pointerEvents:"none"}}><img src={s.src} alt="붙인 포동이 스티커" draggable={false}/></div>)}
    <nav className="book-nav">
     <button disabled={page===0} onClick={()=>turn(page-1)}>앞 페이지</button>
@@ -48,7 +48,7 @@ export function DecorateBook({story,finish}:{story:StoryData;finish:(d:Decoratio
 
 const styles=`
 .reader{padding:clamp(10px,1.6vw,20px) clamp(10px,2vw,24px)!important;display:flex;align-items:center;justify-content:center}
-.reader .book{width:min(1420px,97vw);max-width:97vw;height:clamp(580px,calc(100svh - 110px),820px);min-height:0;margin:auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);position:relative;border-radius:28px;overflow:hidden;box-shadow:0 30px 85px rgba(61,41,64,0.18)}
+.reader .book{width:min(1420px,97vw);max-width:97vw;height:clamp(550px,calc(100svh - 180px),780px);min-height:0;margin:auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);position:relative;border-radius:28px;overflow:hidden;box-shadow:0 30px 85px rgba(61,41,64,0.18)}
 .gallery-decorate-badge{position:absolute;right:22px;top:18px;z-index:12;border:0;background:linear-gradient(145deg,#fff0f5,#ffe2ec);color:#cf3468;font-weight:700;font-size:14px;padding:9px 16px;border-radius:99px;box-shadow:0 4px 14px rgba(207,52,104,0.18);border:1px solid #ffd1e0;cursor:pointer;transition:transform .18s ease}
 .gallery-decorate-badge:hover{transform:translateY(-2px)}
 .reader .book .visual{height:100%;position:relative;background:linear-gradient(145deg,#f5d6df,#eebaca)}
@@ -88,7 +88,7 @@ const styles=`
 .sticker-ghost{position:fixed;z-index:100;width:120px;max-height:150px;object-fit:contain;transform:translate(-50%,-50%);pointer-events:none}
 .decorate-footer{max-width:760px;margin:14px auto 0;display:flex;justify-content:space-between;align-items:center;gap:10px}
 @media(max-width:850px){
- .reader .book{grid-template-columns:1fr;grid-template-rows:44% 56%;height:calc(100svh - 100px);max-height:860px}
+ .reader .book{grid-template-columns:1fr;grid-template-rows:44% 56%;height:calc(100svh - 220px);min-height:480px}
  .book-nav{left:16px;right:16px;bottom:14px}
  .reader .book article{padding:16px 20px 60px}
  .reader .book article h2{font-size:22px;margin:4px 0 8px}
@@ -100,7 +100,7 @@ const styles=`
 }
 @media(max-width:560px){
  .reader{padding:6px 6px!important}
- .reader .book{grid-template-rows:40% 60%;height:calc(100svh - 80px);border-radius:20px}
+ .reader .book{height:calc(100svh - 200px);min-height:440px;border-radius:20px}
  .book-nav{left:10px;right:10px;bottom:8px;gap:6px}
  .book-nav>button{font-size:12px;padding:8px 12px}
  .reader .book article{padding:12px 14px 50px}

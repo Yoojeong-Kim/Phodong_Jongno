@@ -2,6 +2,8 @@ import { env } from "cloudflare:workers";
 import { ensureStoryTables, openAIKey, rowToStory } from "../../../lib/story-store";
 import { STORY_SYSTEM_PROMPT, storyInput } from "../../../lib/story-prompt";
 
+export const dynamic = 'force-dynamic';
+
 const genres=new Set(["공룡","요정","공주와 왕자","동물","우주","전래동화"]);
 const storySchema={type:"object",additionalProperties:false,required:["title","summary","pages"],properties:{title:{type:"string"},summary:{type:"string"},pages:{type:"array",minItems:5,maxItems:5,items:{type:"object",additionalProperties:false,required:["page","title","text","image_prompt"],properties:{page:{type:"integer"},title:{type:"string"},text:{type:"string"},image_prompt:{type:"string"}}}}}};
 
