@@ -31,9 +31,43 @@ export async function POST(req:Request){
   const PHODONG="포동이 외형: 포동이는 통통하고 포근한 꿀베이지색 봉제인형 곰돌이 캐릭터. 복슬복슬한 털 질감, 둥글둥글한 귀, 작고 까만 단추 눈과 코, 발그레한 살구빛 볼, 손발바닥의 핑크 젤리 패드. 포근한 아이보리 꽈배기 니트 스웨터와 사랑스러운 코랄 핑크 스카프를 매고 있음.";
   const noPhodong="포동이 및 곰·테디베어 캐릭터는 일체 등장시키지 말 것.";
 
-  const scenePrompt=`[3D Storybook Illustration - Genre: ${story.genre}]\n\n[Scene ${page+1}/5 - Story & Action]:\n${target.text}\n\n[Visual Details & Key Subjects]:\n${target.image_prompt}\n* 반드시 이야기와 장르 '${story.genre}'의 핵심 요소(예: 공룡 장르면 사랑스럽고 귀여운 3D 아기 공룡들과 웅장한 공룡 시대 풍경)가 장면에 크고 생생하게 살아있어야 함!\n\n[Camera & Composition Guide]:\n${sceneRules[page]}. 다채로운 각도와 역동적인 포즈.\n\n[Character & Mascot Continuity]:\n${phodongIncluded?PHODONG:noPhodong}\n소중한 물건 '${story.object_name}'의 형태·색감·질감을 매 페이지 정확히 보존.\n\n[Rendering & Art Style]:\n${STYLE}`;
+  let response: Response;
 
-  const response=await fetch("https://api.openai.com/v1/images/generations",{method:"POST",headers:{Authorization:`Bearer ${openAIKey()}`,"Content-Type":"application/json"},body:JSON.stringify({model:"gpt-image-1",prompt:scenePrompt,size:"1024x1024",quality:"high",output_format:"png"})});
+  if(page === 0){
+   // 1페이지: 전체 동화의 화풍과 캐릭터(주인공 + 포동이)를 결정짓는 핵심 앵커 생성
+   const anchorPrompt=`[3D Storybook Masterpiece Illustration - Opening Scene - Genre: ${story.genre}]\n\n[Scene 1 Story]:\n${target.text}\n\n[Visual Details & Key Subjects]:\n${target.image_prompt}\n\n[Camera & Atmosphere]:\n${sceneRules[0]}. 방 안에서 소중한 물건 '${story.object_name}'(색상, 형태, 질감 정밀 묘사)이 신비롭게 빛나며 마법의 문이 열리는 따스한 장면.\n\n[Character Continuity Base]:\n${phodongIncluded?PHODONG:noPhodong}\n주인공 아이와 포동이의 사랑스럽고 포근한 니트 착장과 귀여운 표정.\n\n[Rendering & Art Style]:\n${STYLE}`;
+
+   response=await fetch("https://api.openai.com/v1/images/generations",{
+    method:"POST",
+    headers:{Authorization:`Bearer ${openAIKey()}`,"Content-Type":"application/json"},
+    body:JSON.stringify({model:"gpt-image-1",prompt:anchorPrompt,size:"1024x1024",quality:"high",output_format:"png"})
+   });
+  } else {
+   // 2~5페이지: 1페이지에서 확정된 주인공 아이와 포동이 캐릭터를 레퍼런스로 고정하고, 장르별 사건/배경으로 연속 전개
+   const firstRow=await env.DB.prepare("SELECT b64 FROM story_images WHERE key=?").bind(`stories/${id}/page-1-style-v2.png`).first<{b64:string}>();
+   if(!firstRow?.b64)return Response.json({error:"첫 번째 그림부터 다시 만들어 줘."},{status:409});
+
+   const bin=atob(firstRow.b64);
+   const refU8=new Uint8Array(bin.length);
+   for(let i=0;i<bin.length;i++){refU8[i]=bin.charCodeAt(i);}
+
+   const editPrompt=`[3D Storybook Continuation Scene ${page+1}/5 - Genre: ${story.genre}]\n\n[Strict Character Identity Lock]:\nAttached image is Page 1 reference. Maintain the exact same 3D character design: the child's facial features, haircut, hair color, eyes, and cozy knitted clothes, as well as the exact same Phodong plush teddy bear character design (soft beige fur, cream sweater, pink scarf). Do not change their faces or character models.\n\n[New Scene & Action in ${story.genre} World]:\n${target.text}\n${target.image_prompt}\n* Transform the environment completely into the vivid ${story.genre} universe! (e.g. For dinosaur genre, feature cute friendly 3D baby dinosaurs, lush ancient foliage, giant prehistoric plants, and dinosaur eggs).\n\n[Dynamic Scene & Composition]:\n${sceneRules[page]}. Dynamic action, expressive gestures interacting with the ${story.genre} elements and precious object '${story.object_name}'.\n\n[Style Consistency]:\n${STYLE}`;
+
+   const form=new FormData();
+   form.append("model","gpt-image-1");
+   form.append("prompt",editPrompt);
+   form.append("size","1024x1024");
+   form.append("quality","high");
+   form.append("output_format","png");
+   form.append("image",new Blob([refU8.buffer],{type:"image/png"}),"page-1-character-reference.png");
+
+   response=await fetch("https://api.openai.com/v1/images/edits",{
+    method:"POST",
+    headers:{Authorization:`Bearer ${openAIKey()}`},
+    body:form
+   });
+  }
+
   if(!response.ok){const detail=await response.text();console.error("image_api",response.status,detail.slice(0,500));throw new Error(`이미지 API 오류 ${response.status}`)}
   const data=await response.json() as any,b64=data.data?.[0]?.b64_json;if(!b64)throw new Error("이미지 데이터 없음");
   await env.DB.prepare("INSERT INTO story_images (key,b64,created_at) VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET b64=excluded.b64").bind(key,b64,Date.now()).run();
