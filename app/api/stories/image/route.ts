@@ -76,7 +76,7 @@ Absolute Constraints & Negative Rules: Absolutely NO muddy, dull, murky, greyish
    response=await fetch("https://api.openai.com/v1/images/generations",{
     method:"POST",
     headers:{Authorization:`Bearer ${openAIKey()}`,"Content-Type":"application/json"},
-    body:JSON.stringify({model:"gpt-image-1",prompt:anchorPrompt.substring(0, 4000),size:"1024x1024",quality:"high",output_format:"png"})
+    body:JSON.stringify({model:"gpt-image-2",prompt:anchorPrompt.substring(0, 4000),size:"1024x1024",quality:"hd"})
    });
   } else {
    // 2~5페이지: 텍스트 프롬프트를 통해 인물과 화풍 고정
@@ -85,7 +85,7 @@ Absolute Constraints & Negative Rules: Absolutely NO muddy, dull, murky, greyish
    response=await fetch("https://api.openai.com/v1/images/generations",{
     method:"POST",
     headers:{Authorization:`Bearer ${openAIKey()}`,"Content-Type":"application/json"},
-    body:JSON.stringify({model:"gpt-image-1",prompt:editPrompt.substring(0, 4000),size:"1024x1024",quality:"high",output_format:"png"})
+    body:JSON.stringify({model:"gpt-image-2",prompt:editPrompt.substring(0, 4000),size:"1024x1024",quality:"hd"})
    });
   }
 
