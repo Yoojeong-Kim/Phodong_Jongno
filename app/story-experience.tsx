@@ -36,35 +36,41 @@ export function ReaderBook({story,onSave,onDecorate,isFromGallery,initialItems}:
 
  if (page === story.pages.length) {
    return <section className="screen story reader">
-    <div className={`book back-cover-mode ${turning?`turn-${turning}`:""}`} onTouchStart={e=>touch.current=e.touches[0].clientX} onTouchEnd={e=>{const d=e.changedTouches[0].clientX-touch.current;if(Math.abs(d)>55)turn(page+(d>0?-1:1))}}>
+    <div className={`book back-cover-mode ${turning?`turn-${turning}`:""}`} style={{display:"block"}} onTouchStart={e=>touch.current=e.touches[0].clientX} onTouchEnd={e=>{const d=e.changedTouches[0].clientX-touch.current;if(Math.abs(d)>55)turn(page+(d>0?-1:1))}}>
      <div className="back-cover-grid">
-      {/* 왼쪽: 마지막 페이지 이미지 전체 화면 */}
+      {/* 왼쪽 절반: 이미지 꽉 채우기 + 반투명 오버레이 위에 제목 + 버튼 */}
       <div className="back-left">
-       {story.pages[story.pages.length-1]?.image_url?<img src={story.pages[story.pages.length-1].image_url} style={{width:"100%",height:"100%",objectFit:"cover"}} alt="뒷표지 배경"/>:<div className="image-wait">배경을 불러오고 있어</div>}
-      </div>
-      {/* 오른쪽: 물건 정보 + 버튼 */}
-      <div className="back-right">
-       <div className="back-right-inner">
-        <h2 className="back-title">포동이와 함께한<br/>모험, 어땠어?</h2>
-        <p className="back-genre">우리가 고른 <strong>{story.genre}</strong> 세상에서<br/>멋진 일들이 있었지!</p>
-        {initialItems && initialItems.length > 0 && initialItems.some(v=>v.photo) && (
-          <div className="back-polaroids">
-            {initialItems.filter(v=>v.photo).map((item,i) => (
-              <figure key={i} className="polaroid">
-                <img src={item.photo} alt="소중한 물건"/>
-                <figcaption>
-                  <strong>{item.name}</strong>
-                  {item.reason && <span>{item.reason}</span>}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        )}
-        <nav className="back-nav">
+       {story.pages[story.pages.length-1]?.image_url
+         ?<img src={story.pages[story.pages.length-1].image_url} alt="뒷표지 배경"/>
+         :<div className="image-wait">배경을 불러오고 있어</div>}
+       <div className="back-left-overlay">
+        <h2>포동이와 함께한 모험, 어땠어?</h2>
+        <p>우리가 고른 <strong>{story.genre}</strong> 세상에서<br/>멋진 일들이 있었지!</p>
+        <nav className="back-nav-left">
          <button onClick={()=>turn(page-1)}>← 이야기로</button>
          {isFromGallery?(onDecorate?<button className="save-story" onClick={onDecorate}>🎨 꾸미러 가기</button>:<button className="save-story" onClick={onSave}>책장으로</button>):<button className="save-story" onClick={onSave}>동화 저장하기</button>}
         </nav>
        </div>
+      </div>
+      {/* 오른쪽 절반: 폴라로이드 카드 */}
+      <div className="back-right">
+       {initialItems && initialItems.length > 0 && initialItems.some(v=>v.photo)
+        ? <div className="back-polaroids">
+           {initialItems.filter(v=>v.photo).map((item,i) => (
+             <figure key={i} className="polaroid">
+              <img src={item.photo} alt="소중한 물건"/>
+              <figcaption>
+               <strong>{item.name}</strong>
+               {item.reason && <span>{item.reason}</span>}
+              </figcaption>
+             </figure>
+           ))}
+          </div>
+        : <div className="back-no-items">
+           <span style={{fontSize:"48px"}}>📷</span>
+           <p>소중한 물건 사진이<br/>이곳에 담겨요!</p>
+          </div>
+       }
       </div>
      </div>
     </div>
@@ -144,21 +150,25 @@ const styles=`
 .sticker-ghost{position:fixed;z-index:100;width:120px;max-height:150px;object-fit:contain;transform:translate(-50%,-50%);pointer-events:none}
 .back-cover-grid{display:grid;grid-template-columns:1fr 1fr;height:100%;width:100%}
 .back-left{position:relative;overflow:hidden}
-.back-left img{width:100%;height:100%;object-fit:cover;display:block}
-.back-right{background:linear-gradient(160deg,#fff7fa,#ffe8f0);display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:24px}
-.back-right-inner{display:flex;flex-direction:column;align-items:center;gap:18px;width:100%;max-width:340px;text-align:center}
-.back-title{font-size:clamp(20px,2.6vw,28px);font-weight:800;color:#3d2940;margin:0;line-height:1.3}
-.back-genre{font-size:clamp(14px,1.5vw,17px);color:#8d5f70;margin:0;line-height:1.5}
-.back-polaroids{display:flex;flex-direction:column;gap:14px;width:100%}
-.polaroid{margin:0;background:#fff;padding:10px 10px 14px;border-radius:16px;box-shadow:0 8px 24px rgba(120,60,80,0.15);transform:rotate(-1.2deg);transition:transform .2s}
-.polaroid:nth-child(even){transform:rotate(1deg)}
-.polaroid:hover{transform:rotate(0) scale(1.02)}
-.polaroid img{width:100%;height:clamp(100px,14vw,160px);object-fit:cover;border-radius:8px;display:block;margin-bottom:8px}
-.polaroid figcaption{display:flex;flex-direction:column;gap:4px}
-.polaroid figcaption strong{font-size:clamp(14px,1.4vw,16px);color:#3d2940}
-.polaroid figcaption span{font-size:clamp(12px,1.1vw,14px);color:#8d6874;line-height:1.4}
-.back-nav{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:4px}
-.back-nav button{border:0;background:#f9e7ed;padding:10px 16px;border-radius:99px;font-size:14px;font-weight:600;color:#4d3442;cursor:pointer}
+.back-left img{width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0}
+.back-left-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.72) 0%,rgba(0,0,0,0.3) 60%,rgba(0,0,0,0.1) 100%);display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;padding:32px;gap:12px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.6)}
+.back-left-overlay h2{font-size:clamp(20px,2.8vw,30px);font-weight:900;margin:0;line-height:1.3;word-break:keep-all}
+.back-left-overlay p{font-size:clamp(13px,1.4vw,16px);margin:0;color:rgba(255,255,255,0.88);line-height:1.5}
+.back-nav-left{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.back-nav-left button{border:0;background:rgba(255,255,255,0.22);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.35);padding:10px 18px;border-radius:99px;font-size:14px;font-weight:600;color:#fff;cursor:pointer;transition:background .2s}
+.back-nav-left button:hover{background:rgba(255,255,255,0.35)}
+.back-nav-left .save-story{background:linear-gradient(145deg,#ff789f,#e94b7f)!important;border:none!important;box-shadow:0 4px 12px rgba(233,75,127,0.35)!important}
+.back-right{background:linear-gradient(160deg,#fff7fa,#ffe8f0);display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:28px}
+.back-polaroids{display:flex;flex-direction:column;gap:18px;width:100%;max-width:300px}
+.polaroid{margin:0;background:#fff;padding:10px 10px 16px;border-radius:16px;box-shadow:0 8px 28px rgba(120,60,80,0.14);transform:rotate(-1.5deg);transition:transform .2s}
+.polaroid:nth-child(even){transform:rotate(1.2deg)}
+.polaroid:hover{transform:rotate(0) scale(1.03)}
+.polaroid img{width:100%;height:clamp(90px,12vw,150px);object-fit:cover;border-radius:8px;display:block;margin-bottom:10px}
+.polaroid figcaption{display:flex;flex-direction:column;gap:4px;padding:0 4px}
+.polaroid figcaption strong{font-size:clamp(14px,1.4vw,16px);color:#3d2940;font-weight:700}
+.polaroid figcaption span{font-size:clamp(12px,1.1vw,13px);color:#8d6874;line-height:1.4}
+.back-no-items{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#c9a0b0;text-align:center;height:100%}
+.back-no-items p{font-size:15px;line-height:1.6;margin:0}
 .book.back-cover-mode::after{content:"";position:absolute;right:0;top:0;bottom:0;width:34px;background:linear-gradient(to left,rgba(0,0,0,0.25) 0%,rgba(0,0,0,0.05) 30%,rgba(255,255,255,0.15) 50%,transparent 100%);z-index:10;pointer-events:none}
 .book.cover-mode::after{content:"";position:absolute;left:0;top:0;bottom:0;width:34px;background:linear-gradient(to right,rgba(0,0,0,0.3) 0%,rgba(0,0,0,0.05) 30%,rgba(255,255,255,0.15) 50%,transparent 100%);z-index:10;pointer-events:none}
 .cover-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.35);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-shadow:0 4px 12px rgba(0,0,0,0.5)}
