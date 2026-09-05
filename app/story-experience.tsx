@@ -1,6 +1,6 @@
 "use client";
 import {PointerEvent,useRef,useState} from "react";
-
+import {downloadStoryPdf} from "../lib/generate-pdf";
 export type StoryPage={page:number;title:string;text:string;image_prompt:string;image_url?:string};
 export type Sticker={id:string;src:string;page:number;x:number;y:number;size:number};
 export type Point={x:number;y:number};
@@ -14,8 +14,10 @@ function BookPage({story,page}:{story:StoryData;page:number}){const p=story.page
 
 export function ReaderBook({story,onSave,onDecorate,isFromGallery,initialItems}:{story:StoryData;onSave:()=>void;onDecorate?:()=>void;isFromGallery?:boolean;initialItems?:{photo:string;name:string;reason:string}[]}){
  const [showCover,setShowCover]=useState(true);
+ const [pdfLoading,setPdfLoading]=useState(false);
  const [page,setPage]=useState(0),[turning,setTurning]=useState<"next"|"prev"|null>(null),touch=useRef(0);
  function turn(n:number){if(n<0||n>story.pages.length||n===page||turning)return;setTurning(n>page?"next":"prev");setPage(n);setTimeout(()=>setTurning(null),480)}
+ async function handlePdf(){setPdfLoading(true);try{await downloadStoryPdf(story)}finally{setPdfLoading(false)}}
  const pageStrokes=(story.drawings||[]).filter(s=>s.page===page),pageStickers=(story.stickers||[]).filter(s=>s.page===page);
  
  if(showCover){
@@ -81,6 +83,7 @@ export function ReaderBook({story,onSave,onDecorate,isFromGallery,initialItems}:
  return <section className="screen story reader">
   <div className={`book ${turning?`turn-${turning}`:""}`} onTouchStart={e=>touch.current=e.touches[0].clientX} onTouchEnd={e=>{const d=e.changedTouches[0].clientX-touch.current;if(Math.abs(d)>55)turn(page+(d>0?-1:1))}}>
    {isFromGallery&&onDecorate&&<button className="gallery-decorate-badge" onClick={onDecorate}>🎨 이 동화 꾸미기</button>}
+   <button className="gallery-pdf-badge" disabled={pdfLoading} onClick={handlePdf}>{pdfLoading?"⏳ PDF 만드는 중…":"📄 PDF 저장"}</button>
    <BookPage story={story} page={page}/>
    <svg className="drawing-layer reader-drawings" viewBox="0 0 100 100" preserveAspectRatio="none" style={{pointerEvents:"none"}}>{pageStrokes.map(s=><polyline key={s.id} points={s.points.map(p=>`${p.x},${p.y}`).join(" ")} fill="none" stroke={s.color} strokeWidth={s.width/2} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>)}</svg>
    {pageStickers.map(s=><div key={s.id} className="placed-sticker" style={{left:`${s.x}%`,top:`${s.y}%`,width:s.size,pointerEvents:"none"}}><img src={s.src} alt="붙인 포동이 스티커" draggable={false}/></div>)}
@@ -113,6 +116,9 @@ const styles=`
 .reader .book{width:min(1420px,97vw);max-width:97vw;height:clamp(550px,calc(100svh - 180px),780px);min-height:0;margin:auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);position:relative;border-radius:28px;overflow:hidden;box-shadow:0 30px 85px rgba(61,41,64,0.18)}
 .gallery-decorate-badge{position:absolute;right:22px;top:18px;z-index:12;border:0;background:linear-gradient(145deg,#fff0f5,#ffe2ec);color:#cf3468;font-weight:700;font-size:14px;padding:9px 16px;border-radius:99px;box-shadow:0 4px 14px rgba(207,52,104,0.18);border:1px solid #ffd1e0;cursor:pointer;transition:transform .18s ease}
 .gallery-decorate-badge:hover{transform:translateY(-2px)}
+.gallery-pdf-badge{position:absolute;left:22px;top:18px;z-index:12;border:0;background:linear-gradient(145deg,#e8f0ff,#d6e4ff);color:#2d5cc4;font-weight:700;font-size:14px;padding:9px 16px;border-radius:99px;box-shadow:0 4px 14px rgba(45,92,196,0.15);border:1px solid #c2d4ff;cursor:pointer;transition:transform .18s ease}
+.gallery-pdf-badge:hover{transform:translateY(-2px)}
+.gallery-pdf-badge:disabled{opacity:.6;cursor:wait}
 .reader .book .visual{height:100%;position:relative;background:linear-gradient(145deg,#f5d6df,#eebaca)}
 .reader .book .visual img{width:100%;height:100%;object-fit:cover;display:block}
 .reader .book article{padding:clamp(24px,3.5vw,48px) clamp(28px,4vw,56px) 80px;display:flex;flex-direction:column;justify-content:center;overflow:visible!important}
