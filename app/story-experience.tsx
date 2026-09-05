@@ -17,7 +17,7 @@ export function ReaderBook({story,onSave,onDecorate,isFromGallery,initialItems}:
  const [pdfLoading,setPdfLoading]=useState(false);
  const [page,setPage]=useState(0),[turning,setTurning]=useState<"next"|"prev"|null>(null),touch=useRef(0);
  function turn(n:number){if(n<0||n>story.pages.length||n===page||turning)return;setTurning(n>page?"next":"prev");setPage(n);setTimeout(()=>setTurning(null),480)}
- async function handlePdf(){setPdfLoading(true);try{await downloadStoryPdf(story)}finally{setPdfLoading(false)}}
+ async function handlePdf(){setPdfLoading(true);try{await downloadStoryPdf(story, initialItems)}finally{setPdfLoading(false)}}
  const pageStrokes=(story.drawings||[]).filter(s=>s.page===page),pageStickers=(story.stickers||[]).filter(s=>s.page===page);
  
  if(showCover){

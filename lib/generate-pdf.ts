@@ -1,5 +1,3 @@
-﻿// PDF 다운로드 – html2canvas + jsPDF 사용
-// 한글 완벽 지원 + 인쇄 다이얼로그 없이 바로 다운로드
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -17,6 +15,12 @@ export interface PdfStoryData {
   pages: PdfStoryPage[];
 }
 
+export interface InitialItem {
+  photo: string;
+  name: string;
+  reason: string;
+}
+
 function esc(s: string) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -26,8 +30,7 @@ function imgTag(url: string | undefined, alt: string) {
   return `<img src="${esc(url)}" alt="${esc(alt)}" crossorigin="anonymous" />`;
 }
 
-export async function downloadStoryPdf(story: PdfStoryData) {
-  // 숨겨진 컨테이너 생성
+export async function downloadStoryPdf(story: PdfStoryData, initialItems?: InitialItem[]) {
   const container = document.createElement('div');
   container.style.position = 'absolute';
   container.style.left = '-9999px';
@@ -36,7 +39,7 @@ export async function downloadStoryPdf(story: PdfStoryData) {
 
   const pagesHtml: string[] = [];
 
-  // ── 표지 ──────────────────────────────────────────────────────
+  // 표지
   pagesHtml.push(`
     <div class="pdf-page cover-page">
       <div class="img-side">
@@ -51,7 +54,7 @@ export async function downloadStoryPdf(story: PdfStoryData) {
       </div>
     </div>`);
 
-  // ── 스토리 5장 ────────────────────────────────────────────────
+  // 스토리
   story.pages.forEach((p, i) => {
     const pageTitle = i === 0 ? story.title : p.title;
     pagesHtml.push(`
@@ -69,8 +72,33 @@ export async function downloadStoryPdf(story: PdfStoryData) {
       </div>`);
   });
 
-  // ── 뒷 표지 ──────────────────────────────────────────────────
+  // 뒷 표지
   const lastPage = story.pages[story.pages.length - 1];
+  
+  let polaroidsHtml = '';
+  if (initialItems && initialItems.length > 0 && initialItems.some(v => v.photo)) {
+    polaroidsHtml = `<div class="polaroids-container">`;
+    initialItems.filter(v => v.photo).forEach((item, i) => {
+      polaroidsHtml += `
+        <figure class="polaroid ${i % 2 === 0 ? 'tilt-left' : 'tilt-right'}">
+          <img src="${esc(item.photo)}" crossorigin="anonymous" />
+          <figcaption>
+            <strong>${esc(item.name)}</strong>
+            ${item.reason ? `<span>${esc(item.reason)}</span>` : ''}
+          </figcaption>
+        </figure>
+      `;
+    });
+    polaroidsHtml += `</div>`;
+  } else {
+    polaroidsHtml = `
+      <div class="back-no-items">
+        <span style="font-size: 60px;">📷</span>
+        <p>소중한 물건 사진이<br/>이곳에 담겨요!</p>
+      </div>
+    `;
+  }
+
   pagesHtml.push(`
     <div class="pdf-page back-page">
       <div class="img-side">
@@ -81,15 +109,10 @@ export async function downloadStoryPdf(story: PdfStoryData) {
         </div>
       </div>
       <div class="text-side cover-text-side">
-        <div class="cover-content">
-          <small>${esc(story.child_name)}의 ${esc(story.genre)} 동화</small>
-          <p class="back-object">소중한 물건<br/><strong>${esc(story.object_name)}</strong></p>
-        </div>
+        ${polaroidsHtml}
       </div>
     </div>`);
 
-  // 스타일 설정 - 가로 297mm x 세로 210mm (비율: 1122.5 x 793.7 픽셀, 96dpi 기준)
-  // 해상도를 높이기 위해 2배수 사이즈로 설정
   const W = 1122;
   const H = 793;
 
@@ -107,8 +130,6 @@ export async function downloadStoryPdf(story: PdfStoryData) {
         overflow: hidden;
         background: #fff;
       }
-      
-      /* 왼쪽 절반: 이미지 영역 (가로 절반) */
       .img-side {
         width: ${W / 2}px;
         height: ${H}px;
@@ -119,19 +140,12 @@ export async function downloadStoryPdf(story: PdfStoryData) {
         position: relative;
         overflow: hidden;
       }
-      /* 이미지가 가로폭에 꽉 차고, 세로는 비율에 맞게(위아래 여백 발생) */
       .img-side img {
         width: 100%;
         height: auto;
         object-fit: contain;
         display: block;
       }
-      .img-placeholder {
-        font-size: 80px;
-        opacity: .4;
-      }
-
-      /* 오른쪽 절반: 텍스트 영역 */
       .text-side {
         width: ${W / 2}px;
         height: ${H}px;
@@ -176,8 +190,6 @@ export async function downloadStoryPdf(story: PdfStoryData) {
         word-break: keep-all;
         margin: 0;
       }
-
-      /* 표지 & 뒷표지 텍스트 영역 */
       .cover-text-side {
         background: linear-gradient(160deg, #fff7fa, #ffe8f0);
         justify-content: center;
@@ -203,8 +215,6 @@ export async function downloadStoryPdf(story: PdfStoryData) {
         font-size: 18px;
         color: #8d5f70;
       }
-
-      /* 뒷 표지 오버레이 */
       .back-overlay {
         position: absolute;
         bottom: 0;
@@ -228,17 +238,61 @@ export async function downloadStoryPdf(story: PdfStoryData) {
         margin-top: 8px;
         display: block;
       }
-      .back-object {
-        font-size: 20px;
-        color: #8d5f70;
-        line-height: 1.6;
+      
+      /* 폴라로이드 스타일 추가 */
+      .polaroids-container {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+        width: 100%;
+        max-width: 400px;
       }
-      .back-object strong {
-        font-size: 28px;
-        color: #3d2940;
-        font-weight: 900;
+      .polaroid {
+        margin: 0;
+        background: #fff;
+        padding: 16px 16px 24px;
+        border-radius: 20px;
+        box-shadow: 0 12px 30px rgba(120,60,80,0.15);
+      }
+      .tilt-left { transform: rotate(-1.5deg); }
+      .tilt-right { transform: rotate(1.2deg); }
+      .polaroid img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 12px;
         display: block;
-        margin-top: 10px;
+        margin-bottom: 16px;
+      }
+      .polaroid figcaption {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        text-align: left;
+      }
+      .polaroid figcaption strong {
+        font-size: 22px;
+        color: #3d2940;
+        font-weight: 700;
+      }
+      .polaroid figcaption span {
+        font-size: 16px;
+        color: #8d6874;
+        line-height: 1.4;
+      }
+      .back-no-items {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        color: #c9a0b0;
+        text-align: center;
+      }
+      .back-no-items p {
+        font-size: 22px;
+        line-height: 1.6;
+        margin: 0;
       }
     </style>
     <div class="pdf-wrapper">
@@ -246,7 +300,6 @@ export async function downloadStoryPdf(story: PdfStoryData) {
     </div>
   `;
 
-  // 이미지 렌더링 완료 대기 (꼼수: 잠시 대기)
   await new Promise((resolve) => setTimeout(resolve, 500));
 
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
@@ -255,7 +308,7 @@ export async function downloadStoryPdf(story: PdfStoryData) {
   for (let i = 0; i < pages.length; i++) {
     const pageEl = pages[i] as HTMLElement;
     const canvas = await html2canvas(pageEl, {
-      scale: 2, // 고해상도
+      scale: 2,
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff'
@@ -267,14 +320,11 @@ export async function downloadStoryPdf(story: PdfStoryData) {
       doc.addPage();
     }
     
-    // A4 가로: 297 x 210
     doc.addImage(imgData, 'JPEG', 0, 0, 297, 210);
   }
 
-  // 삭제
   document.body.removeChild(container);
 
-  // 다운로드
-  const safeName = story.title.replace(/\\s+/g, '_') || 'story';
+  const safeName = story.title.replace(/\s+/g, '_') || 'story';
   doc.save(`${safeName}_동화.pdf`);
 }
