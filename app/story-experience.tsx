@@ -15,10 +15,9 @@ function BookPage({story,page}:{story:StoryData;page:number}){const p=story.page
 export function ReaderBook({story,onSave,onDecorate,isFromGallery,initialItems}:{story:StoryData;onSave:()=>void;onDecorate?:()=>void;isFromGallery?:boolean;initialItems?:{photo:string;name:string;reason:string}[]}){
  const [showCover,setShowCover]=useState(true);
  const [pdfLoading,setPdfLoading]=useState(false);
- const [localItems,setLocalItems]=useState<{photo:string;name:string;reason:string}[]>(initialItems||[]);
  const [page,setPage]=useState(0),[turning,setTurning]=useState<"next"|"prev"|null>(null),touch=useRef(0);
- function turn(n:number){if(n<0||n>story.pages.length||n===page||turning)return;setTurning(n>page?"next":"prev");setPage(n);setTimeout(()=>setTurning(null),480)}
- async function handlePdf(){setPdfLoading(true);try{await downloadStoryPdf(story, localItems)}finally{setPdfLoading(false)}}
+ function turn(n:number){if(n<0||n>=story.pages.length||n===page||turning)return;setTurning(n>page?"next":"prev");setPage(n);setTimeout(()=>setTurning(null),480)}
+ async function handlePdf(){setPdfLoading(true);try{await downloadStoryPdf(story)}finally{setPdfLoading(false)}}
  const pageStrokes=(story.drawings||[]).filter(s=>s.page===page),pageStickers=(story.stickers||[]).filter(s=>s.page===page);
  
  if(showCover){
@@ -37,57 +36,7 @@ export function ReaderBook({story,onSave,onDecorate,isFromGallery,initialItems}:
    </section>
  }
 
- if (page === story.pages.length) {
-   return <section className="screen story reader">
-    <div className={`book back-cover-mode ${turning?`turn-${turning}`:""}`} style={{display:"block"}} onTouchStart={e=>touch.current=e.touches[0].clientX} onTouchEnd={e=>{const d=e.changedTouches[0].clientX-touch.current;if(Math.abs(d)>55)turn(page+(d>0?-1:1))}}>
-     <div className="back-cover-grid">
-      {/* 왼쪽 절반: 이미지 꽉 채우기 + 반투명 오버레이 위에 제목 + 버튼 */}
-      <div className="back-left">
-       {story.pages[story.pages.length-1]?.image_url
-         ?<img src={story.pages[story.pages.length-1].image_url} alt="뒷표지 배경"/>
-         :<div className="image-wait">배경을 불러오고 있어</div>}
-       <div className="back-left-overlay">
-        <h2>포동이와 함께한 모험, 어땠어?</h2>
-        <p>우리가 고른 <strong>{story.genre}</strong> 세상에서<br/>멋진 일들이 있었지!</p>
-        <nav className="back-nav-left">
-         <button onClick={()=>turn(page-1)}>← 이야기로</button>
-         {isFromGallery?(onDecorate?<button className="save-story" onClick={onDecorate}>🎨 꾸미러 가기</button>:<button className="save-story" onClick={onSave}>책장으로</button>):<button className="save-story" onClick={onSave}>동화 저장하기</button>}
-        </nav>
-       </div>
-      </div>
-      {/* 오른쪽 절반: 폴라로이드 카드 */}
-      <div className="back-right">
-       {localItems && localItems.length > 0 && localItems.some(v=>v.photo)
-        ? <div className="back-polaroids">
-           {localItems.filter(v=>v.photo).map((item,i) => (
-             <figure key={i} className="polaroid">
-              <img src={item.photo} alt="소중한 물건"/>
-              <figcaption>
-               <strong>{item.name}</strong>
-               {item.reason && <span>{item.reason}</span>}
-              </figcaption>
-             </figure>
-           ))}
-          </div>
-        : <label className="back-no-items" style={{cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:"10px", padding:"30px", background:"#fff", borderRadius:"20px", boxShadow:"0 8px 24px rgba(120,60,80,0.1)"}}>
-           <span style={{fontSize:"48px"}}>📷</span>
-           <p style={{fontSize:"16px", color:"#8d6874", margin:0, textAlign:"center", fontWeight:700}}>사진을 다시 올려서<br/>PDF에 담아봐요!</p>
-           <input type="file" accept="image/*" style={{display:"none"}} onChange={e => {
-             const f = e.target.files?.[0];
-             if(!f) return;
-             try {
-               const url = URL.createObjectURL(f);
-               setLocalItems([{ photo: url, name: story.object_name, reason: "" }]);
-             } catch(err) {}
-           }}/>
-          </label>
-       }
-      </div>
-     </div>
-    </div>
-    <style>{styles}</style>
-   </section>
- }
+
 
  return <section className="screen story reader">
   <div className={`book ${turning?`turn-${turning}`:""}`} onTouchStart={e=>touch.current=e.touches[0].clientX} onTouchEnd={e=>{const d=e.changedTouches[0].clientX-touch.current;if(Math.abs(d)>55)turn(page+(d>0?-1:1))}}>
@@ -96,11 +45,17 @@ export function ReaderBook({story,onSave,onDecorate,isFromGallery,initialItems}:
    <BookPage story={story} page={page}/>
    <svg className="drawing-layer reader-drawings" viewBox="0 0 100 100" preserveAspectRatio="none" style={{pointerEvents:"none"}}>{pageStrokes.map(s=><polyline key={s.id} points={s.points.map(p=>`${p.x},${p.y}`).join(" ")} fill="none" stroke={s.color} strokeWidth={s.width/2} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"/>)}</svg>
    {pageStickers.map(s=><div key={s.id} className="placed-sticker" style={{left:`${s.x}%`,top:`${s.y}%`,width:s.size,pointerEvents:"none"}}><img src={s.src} alt="붙인 포동이 스티커" draggable={false}/></div>)}
-   <nav className="book-nav">
-    <button disabled={page===0} onClick={()=>turn(page-1)}>앞 페이지</button>
-    <div>{story.pages.map((_,i)=><button key={i} className={page===i?"on":""} onClick={()=>turn(i)} aria-label={`${i+1}쪽`}/>)}</div>
-    {page<story.pages.length?<button onClick={()=>turn(page+1)}>다음 페이지</button>:null}
-   </nav>
+    <nav className="book-nav">
+     <button disabled={page===0} onClick={()=>turn(page-1)}>앞 페이지</button>
+     <div>{story.pages.map((_,i)=><button key={i} className={page===i?"on":""} onClick={()=>turn(i)} aria-label={`${i+1}쪽`}/>)}</div>
+     {page<story.pages.length-1
+       ? <button onClick={()=>turn(page+1)}>다음 페이지</button>
+       : <div style={{display:"flex",gap:"8px"}}>
+           {isFromGallery?(onDecorate&&<button className="next" onClick={onDecorate}>꾸미기</button>):<button className="next" onClick={onSave}>저장하기</button>}
+           {isFromGallery&&<button onClick={onSave}>책장으로</button>}
+         </div>
+     }
+    </nav>
   </div>
   <style>{styles}</style>
  </section>

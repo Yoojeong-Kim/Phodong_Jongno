@@ -30,7 +30,7 @@ function imgTag(url: string | undefined, alt: string) {
   return `<img src="${esc(url)}" alt="${esc(alt)}" crossorigin="anonymous" />`;
 }
 
-export async function downloadStoryPdf(story: PdfStoryData, initialItems?: InitialItem[]) {
+export async function downloadStoryPdf(story: PdfStoryData) {
   const container = document.createElement('div');
   container.style.position = 'absolute';
   container.style.left = '-9999px';
@@ -72,46 +72,6 @@ export async function downloadStoryPdf(story: PdfStoryData, initialItems?: Initi
       </div>`);
   });
 
-  // 뒷 표지
-  const lastPage = story.pages[story.pages.length - 1];
-  
-  let polaroidsHtml = '';
-  if (initialItems && initialItems.length > 0 && initialItems.some(v => v.photo)) {
-    polaroidsHtml = `<div class="polaroids-container">`;
-    initialItems.filter(v => v.photo).forEach((item, i) => {
-      polaroidsHtml += `
-        <figure class="polaroid ${i % 2 === 0 ? 'tilt-left' : 'tilt-right'}">
-          <img src="${esc(item.photo)}" crossorigin="anonymous" />
-          <figcaption>
-            <strong>${esc(item.name)}</strong>
-            ${item.reason ? `<span>${esc(item.reason)}</span>` : ''}
-          </figcaption>
-        </figure>
-      `;
-    });
-    polaroidsHtml += `</div>`;
-  } else {
-    polaroidsHtml = `
-      <div class="back-no-items">
-        <span style="font-size: 60px;">📷</span>
-        <p>소중한 물건 사진이<br/>이곳에 담겨요!</p>
-      </div>
-    `;
-  }
-
-  pagesHtml.push(`
-    <div class="pdf-page back-page">
-      <div class="img-side">
-        ${imgTag(lastPage?.image_url, '뒷표지')}
-        <div class="back-overlay">
-          <p>포동이와 함께한 모험,<br/>어땠어?</p>
-          <small>우리가 고른 ${esc(story.genre)} 세상에서 멋진 일들이 있었지!</small>
-        </div>
-      </div>
-      <div class="text-side cover-text-side">
-        ${polaroidsHtml}
-      </div>
-    </div>`);
 
   const W = 1122;
   const H = 793;
