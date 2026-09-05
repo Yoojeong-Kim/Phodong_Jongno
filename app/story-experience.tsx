@@ -15,9 +15,10 @@ function BookPage({story,page}:{story:StoryData;page:number}){const p=story.page
 export function ReaderBook({story,onSave,onDecorate,isFromGallery,initialItems}:{story:StoryData;onSave:()=>void;onDecorate?:()=>void;isFromGallery?:boolean;initialItems?:{photo:string;name:string;reason:string}[]}){
  const [showCover,setShowCover]=useState(true);
  const [pdfLoading,setPdfLoading]=useState(false);
+ const [localItems,setLocalItems]=useState<{photo:string;name:string;reason:string}[]>(initialItems||[]);
  const [page,setPage]=useState(0),[turning,setTurning]=useState<"next"|"prev"|null>(null),touch=useRef(0);
  function turn(n:number){if(n<0||n>story.pages.length||n===page||turning)return;setTurning(n>page?"next":"prev");setPage(n);setTimeout(()=>setTurning(null),480)}
- async function handlePdf(){setPdfLoading(true);try{await downloadStoryPdf(story, initialItems)}finally{setPdfLoading(false)}}
+ async function handlePdf(){setPdfLoading(true);try{await downloadStoryPdf(story, localItems)}finally{setPdfLoading(false)}}
  const pageStrokes=(story.drawings||[]).filter(s=>s.page===page),pageStickers=(story.stickers||[]).filter(s=>s.page===page);
  
  if(showCover){
@@ -56,9 +57,9 @@ export function ReaderBook({story,onSave,onDecorate,isFromGallery,initialItems}:
       </div>
       {/* 오른쪽 절반: 폴라로이드 카드 */}
       <div className="back-right">
-       {initialItems && initialItems.length > 0 && initialItems.some(v=>v.photo)
+       {localItems && localItems.length > 0 && localItems.some(v=>v.photo)
         ? <div className="back-polaroids">
-           {initialItems.filter(v=>v.photo).map((item,i) => (
+           {localItems.filter(v=>v.photo).map((item,i) => (
              <figure key={i} className="polaroid">
               <img src={item.photo} alt="소중한 물건"/>
               <figcaption>
@@ -68,10 +69,18 @@ export function ReaderBook({story,onSave,onDecorate,isFromGallery,initialItems}:
              </figure>
            ))}
           </div>
-        : <div className="back-no-items">
+        : <label className="back-no-items" style={{cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", gap:"10px", padding:"30px", background:"#fff", borderRadius:"20px", boxShadow:"0 8px 24px rgba(120,60,80,0.1)"}}>
            <span style={{fontSize:"48px"}}>📷</span>
-           <p>소중한 물건 사진이<br/>이곳에 담겨요!</p>
-          </div>
+           <p style={{fontSize:"16px", color:"#8d6874", margin:0, textAlign:"center", fontWeight:700}}>사진을 다시 올려서<br/>PDF에 담아봐요!</p>
+           <input type="file" accept="image/*" style={{display:"none"}} onChange={e => {
+             const f = e.target.files?.[0];
+             if(!f) return;
+             try {
+               const url = URL.createObjectURL(f);
+               setLocalItems([{ photo: url, name: story.object_name, reason: "" }]);
+             } catch(err) {}
+           }}/>
+          </label>
        }
       </div>
      </div>
