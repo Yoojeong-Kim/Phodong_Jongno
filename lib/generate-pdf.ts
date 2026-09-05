@@ -1,5 +1,6 @@
-﻿// PDF 다운로드 유틸리티 – jsPDF만 사용 (html2canvas 불필요)
-// A4 가로 (landscape): 297 × 210 mm
+﻿// PDF 다운로드 – 브라우저 Print API 사용
+// 한글 완벽 지원 + 이미지 원본 비율 유지
+// A4 가로: 297 × 210 mm
 
 export interface PdfStoryPage {
   title: string;
@@ -15,146 +16,243 @@ export interface PdfStoryData {
   pages: PdfStoryPage[];
 }
 
-async function loadImageDataUrl(src: string): Promise<string | null> {
-  try {
-    const res = await fetch(src);
-    if (!res.ok) return null;
-    const blob = await res.blob();
-    return await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
+function esc(s: string) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function fillRect(doc: any, x: number, y: number, w: number, h: number, hex: string) {
-  doc.setFillColor(hex);
-  doc.rect(x, y, w, h, 'F');
+function imgTag(url: string | undefined, alt: string) {
+  if (!url) return `<div class="img-placeholder">🖼</div>`;
+  return `<img src="${esc(url)}" alt="${esc(alt)}" loading="eager"/>`;
 }
 
-export async function downloadStoryPdf(story: PdfStoryData) {
-  const { jsPDF } = await import('jspdf');
-
-  const W = 297;
-  const H = 210;
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-
-  const PINK      = '#f55f91';
-  const DARK      = '#3d2940';
-  const SOFT_PINK = '#fff0f5';
-  const MID_PINK  = '#ffe2ec';
-  const TEXT_COLOR = '#432e3a';
+function buildHtml(story: PdfStoryData): string {
+  const pages: string[] = [];
 
   // ── 표지 ──────────────────────────────────────────────────────
-  {
-    const imgUrl = story.pages[0]?.image_url;
-    if (imgUrl) {
-      const dataUrl = await loadImageDataUrl(imgUrl);
-      if (dataUrl) {
-        doc.addImage(dataUrl, 'JPEG', 0, 0, W / 2, H);
-        doc.setFillColor(0, 0, 0);
-        doc.setGState(doc.GState({ opacity: 0.38 }));
-        doc.rect(0, 0, W / 2, H, 'F');
-        doc.setGState(doc.GState({ opacity: 1 }));
-      }
-    }
-    fillRect(doc, W / 2, 0, W / 2, H, SOFT_PINK);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(26);
-    doc.setTextColor(DARK);
-    const titleLines = doc.splitTextToSize(story.title, W / 2 - 28);
-    doc.text(titleLines, W * 3 / 4, H / 2 - 10, { align: 'center' });
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(12);
-    doc.setTextColor(PINK);
-    doc.text(`${story.child_name}의 ${story.genre} 동화`, W * 3 / 4, H / 2 + titleLines.length * 12 + 4, { align: 'center' });
-  }
+  pages.push(`
+    <div class="page cover-page">
+      <div class="img-side">
+        ${imgTag(story.pages[0]?.image_url, '표지')}
+      </div>
+      <div class="text-side cover-text-side">
+        <div class="cover-content">
+          <small>${esc(story.child_name)}의 ${esc(story.genre)} 동화</small>
+          <h1>${esc(story.title)}</h1>
+          <p class="cover-sub">소중한 물건: ${esc(story.object_name)}</p>
+        </div>
+      </div>
+    </div>`);
 
-  // ── 스토리 페이지 5장 ─────────────────────────────────────────
-  for (let i = 0; i < story.pages.length; i++) {
-    const p = story.pages[i];
-    doc.addPage();
-
-    if (p.image_url) {
-      const dataUrl = await loadImageDataUrl(p.image_url);
-      if (dataUrl) {
-        doc.addImage(dataUrl, 'JPEG', 0, 0, W / 2, H);
-      } else {
-        fillRect(doc, 0, 0, W / 2, H, MID_PINK);
-      }
-    } else {
-      fillRect(doc, 0, 0, W / 2, H, MID_PINK);
-    }
-
-    fillRect(doc, W / 2, 0, W / 2, H, '#fffdfb');
-    doc.setDrawColor(MID_PINK);
-    doc.setLineWidth(0.5);
-    doc.line(W / 2, 0, W / 2, H);
-
-    const PX = W / 2 + 14;
-    const PW = W / 2 - 28;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(PINK);
-    doc.text(`${story.child_name}의 ${story.genre} 동화`, PX, 20);
-    doc.setFontSize(9);
-    doc.text(`${i + 1} / ${story.pages.length}`, W - 14, 14, { align: 'right' });
-
+  // ── 스토리 5장 ────────────────────────────────────────────────
+  story.pages.forEach((p, i) => {
     const pageTitle = i === 0 ? story.title : p.title;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(i === 0 ? 19 : 15);
-    doc.setTextColor(DARK);
-    const titleLines = doc.splitTextToSize(pageTitle, PW);
-    doc.text(titleLines, PX, 32);
-
-    const lineY = 32 + titleLines.length * (i === 0 ? 8 : 6.5) + 5;
-    doc.setDrawColor(MID_PINK);
-    doc.setLineWidth(0.4);
-    doc.line(PX, lineY, PX + PW, lineY);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10.5);
-    doc.setTextColor(TEXT_COLOR);
-    const bodyLines = doc.splitTextToSize(p.text, PW);
-    doc.text(bodyLines, PX, lineY + 10, { lineHeightFactor: 1.75 });
-  }
+    pages.push(`
+      <div class="page story-page">
+        <div class="img-side">
+          ${imgTag(p.image_url, pageTitle)}
+        </div>
+        <div class="text-side">
+          <small>${esc(story.child_name)}의 ${esc(story.genre)} 동화</small>
+          <span class="page-num">${i + 1} / ${story.pages.length}</span>
+          <h2>${esc(pageTitle)}</h2>
+          <hr/>
+          <p>${esc(p.text)}</p>
+        </div>
+      </div>`);
+  });
 
   // ── 뒷 표지 ──────────────────────────────────────────────────
-  {
-    doc.addPage();
-    const lastImg = story.pages[story.pages.length - 1]?.image_url;
-    if (lastImg) {
-      const dataUrl = await loadImageDataUrl(lastImg);
-      if (dataUrl) {
-        doc.addImage(dataUrl, 'JPEG', 0, 0, W / 2, H);
-        doc.setFillColor(0, 0, 0);
-        doc.setGState(doc.GState({ opacity: 0.45 }));
-        doc.rect(0, 0, W / 2, H, 'F');
-        doc.setGState(doc.GState({ opacity: 1 }));
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(15);
-        doc.setTextColor('#ffffff');
-        doc.text('포동이와 함께한 모험, 어땠어?', W / 4, H - 44, { align: 'center' });
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.text(`우리가 고른 ${story.genre} 세상에서 멋진 일들이 있었지!`, W / 4, H - 30, { align: 'center' });
-      }
-    }
-    fillRect(doc, W / 2, 0, W / 2, H, SOFT_PINK);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(12);
-    doc.setTextColor(DARK);
-    doc.text(`소중한 물건: ${story.object_name}`, W * 3 / 4, H / 2 - 6, { align: 'center' });
-    doc.setFontSize(10);
-    doc.setTextColor(PINK);
-    doc.text(`${story.child_name}의 ${story.genre} 동화`, W * 3 / 4, H / 2 + 10, { align: 'center' });
-  }
+  const lastPage = story.pages[story.pages.length - 1];
+  pages.push(`
+    <div class="page back-page">
+      <div class="img-side">
+        ${imgTag(lastPage?.image_url, '뒷표지')}
+        <div class="back-overlay">
+          <p>포동이와 함께한 모험,<br/>어땠어?</p>
+          <small>우리가 고른 ${esc(story.genre)} 세상에서 멋진 일들이 있었지!</small>
+        </div>
+      </div>
+      <div class="text-side cover-text-side">
+        <div class="cover-content">
+          <small>${esc(story.child_name)}의 ${esc(story.genre)} 동화</small>
+          <p class="back-object">소중한 물건<br/><strong>${esc(story.object_name)}</strong></p>
+        </div>
+      </div>
+    </div>`);
 
-  const safeName = story.title.replace(/\s+/g, '_') || 'story';
-  doc.save(`${safeName}_동화.pdf`);
+  const css = `
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+    @page { size: A4 landscape; margin: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: #fff; }
+
+    .page {
+      width: 297mm;
+      height: 210mm;
+      display: grid;
+      grid-template-columns: 210mm 87mm;
+      page-break-after: always;
+      overflow: hidden;
+    }
+    .page:last-child { page-break-after: avoid; }
+
+    /* 이미지 영역 – 항상 210×210mm 정사각형, 비율 유지 */
+    .img-side {
+      width: 210mm;
+      height: 210mm;
+      position: relative;
+      background: #f5d6df;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .img-side img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;   /* 비율 유지하면서 영역 채우기 */
+      display: block;
+    }
+    .img-placeholder {
+      font-size: 80px;
+      opacity: .4;
+    }
+
+    /* 텍스트 영역 (87mm) */
+    .text-side {
+      width: 87mm;
+      height: 210mm;
+      padding: 14mm 10mm 10mm 11mm;
+      display: flex;
+      flex-direction: column;
+      gap: 5mm;
+      background: #fffdfb;
+      position: relative;
+      overflow: hidden;
+    }
+    .text-side small {
+      font-size: 8pt;
+      color: #f55f91;
+      font-weight: 700;
+    }
+    .page-num {
+      position: absolute;
+      top: 8mm;
+      right: 10mm;
+      font-size: 8pt;
+      color: #f55f91;
+      font-weight: 700;
+    }
+    .text-side h2 {
+      font-size: 14pt;
+      font-weight: 900;
+      color: #3d2940;
+      line-height: 1.35;
+      word-break: keep-all;
+    }
+    .text-side hr {
+      border: none;
+      border-top: 0.5pt solid #ffe2ec;
+      margin: 1mm 0;
+    }
+    .text-side p {
+      font-size: 9.5pt;
+      line-height: 1.85;
+      color: #432e3a;
+      word-break: keep-all;
+      overflow: hidden;
+    }
+
+    /* 표지 텍스트 영역 */
+    .cover-text-side {
+      background: linear-gradient(160deg, #fff7fa, #ffe8f0);
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    .cover-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5mm;
+    }
+    .cover-content small {
+      font-size: 8pt;
+      color: #f55f91;
+      font-weight: 700;
+    }
+    .cover-content h1 {
+      font-size: 18pt;
+      font-weight: 900;
+      color: #3d2940;
+      line-height: 1.3;
+      word-break: keep-all;
+    }
+    .cover-sub {
+      font-size: 9pt;
+      color: #8d5f70;
+    }
+
+    /* 뒷 표지 오버레이 */
+    .back-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, rgba(0,0,0,.75), transparent);
+      padding: 10mm 8mm 8mm;
+      color: #fff;
+      text-align: center;
+    }
+    .back-overlay p {
+      font-size: 13pt;
+      font-weight: 900;
+      line-height: 1.4;
+      color: #fff;
+    }
+    .back-overlay small {
+      font-size: 8pt;
+      color: rgba(255,255,255,.85);
+      margin-top: 2mm;
+      display: block;
+    }
+    .back-object {
+      font-size: 10pt;
+      color: #8d5f70;
+      line-height: 1.6;
+    }
+    .back-object strong {
+      font-size: 14pt;
+      color: #3d2940;
+      font-weight: 900;
+    }
+  `;
+
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <title>${esc(story.title)}_동화</title>
+  <style>${css}</style>
+</head>
+<body>
+  ${pages.join('\n')}
+  <script>
+    // 이미지·폰트 로드 완료 후 프린트 다이얼로그 열기
+    window.addEventListener('load', function() {
+      setTimeout(function() { window.print(); }, 800);
+    });
+  </script>
+</body>
+</html>`;
+}
+
+export function downloadStoryPdf(story: PdfStoryData) {
+  const win = window.open('', '_blank');
+  if (!win) {
+    alert('팝업이 차단되었어요. 브라우저 주소창 옆 팝업 허용 버튼을 눌러 주세요.');
+    return;
+  }
+  win.document.write(buildHtml(story));
+  win.document.close();
 }
